@@ -1,1 +1,0 @@
-"""Artifact generation and validation."""

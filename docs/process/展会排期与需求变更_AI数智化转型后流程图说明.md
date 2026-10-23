@@ -129,6 +129,6 @@ flowchart TB
 
 ## 来源与待核实事项
 
-依据 [discovery-report.md](../../data/source/discovery-report.md)；fNN表示dlg-venue-schedule-fNN。现状图见 [访谈流程图说明](展会排期与需求变更_访谈流程图说明.md)。
+依据 [discovery-report.md](../source/discovery-report.md)；fNN表示dlg-venue-schedule-fNN。现状图见 [访谈流程图说明](展会排期与需求变更_访谈流程图说明.md)。
 
 仍需核实真实数据授权、统一编号映射、资源及缓冲规则、审批岗位、模型环境、字段敏感级别、留存期限和接口条件。此图为转型后的目标工作方式，不修改原始访谈，也不证明任何业务流程已部署。
