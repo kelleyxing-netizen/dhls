@@ -15,3 +15,10 @@ def build_flow():
     (ROOT / ".research").mkdir(exist_ok=True)
     (ROOT / "docs/assets").mkdir(parents=True, exist_ok=True)
     runpy.run_path(str(ROOT / "scripts/draw_interview_flow.py"), run_name="__main__")
+
+
+def build_ai_flow():
+    (ROOT / ".research").mkdir(exist_ok=True)
+    (ROOT / "docs/assets").mkdir(parents=True, exist_ok=True)
+    (ROOT / "docs/process").mkdir(parents=True, exist_ok=True)
+    runpy.run_path(str(ROOT / "scripts/draw_ai_flow.py"), run_name="__main__")

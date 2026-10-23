@@ -1,4 +1,4 @@
-"""Run from a fresh checkout: python scripts/build.py check|report|flow|all."""
+"""Run: python scripts/build.py check|report|flow|ai-flow|all."""
 
 import sys
 from pathlib import Path

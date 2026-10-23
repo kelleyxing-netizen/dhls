@@ -3,5 +3,7 @@
   "report_docx": "docs/reports/展会排期与需求变更项目调研报告_20261023_优化版.docx",
   "report_md": "docs/reports/展会排期与需求变更项目调研报告_20261023_优化版.md",
   "flow_png": "docs/assets/展会排期与需求变更_访谈流程图.png",
-  "flow_md": "docs/process/展会排期与需求变更_访谈流程图说明.md"
+  "flow_md": "docs/process/展会排期与需求变更_访谈流程图说明.md",
+  "ai_flow_png": "docs/assets/展会排期与需求变更_AI数智化转型后流程图.png",
+  "ai_flow_md": "docs/process/展会排期与需求变更_AI数智化转型后流程图说明.md"
 }

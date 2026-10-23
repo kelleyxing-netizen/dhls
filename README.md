@@ -12,6 +12,7 @@
 | 行业及 GitHub 项目调研 | [Markdown](docs/reports/展会排期与需求变更项目调研报告_20261023_优化版.md) · [Word](docs/reports/展会排期与需求变更项目调研报告_20261023_优化版.docx) |
 | 访谈流程图 | [高清 PNG](docs/assets/展会排期与需求变更_访谈流程图.png) |
 | 流程节点与风险说明 | [说明及 Mermaid 源码](docs/process/展会排期与需求变更_访谈流程图说明.md) |
+| AI 数智化转型后目标流程 | [高清 PNG](docs/assets/展会排期与需求变更_AI数智化转型后流程图.png) · [说明及 Mermaid 源码](docs/process/展会排期与需求变更_AI数智化转型后流程图说明.md) |
 
 ![访谈流程图](docs/assets/展会排期与需求变更_访谈流程图.png)
 
@@ -47,6 +48,7 @@ python -m pip install -r requirements.txt
 python scripts/build.py check
 python scripts/build.py report
 python scripts/build.py flow
+python scripts/build.py ai-flow
 python scripts/build.py all
 python -m unittest discover -s tests -v
 python examples/demo.py
@@ -55,6 +57,7 @@ python examples/demo.py
 - `check`：检查成果文件、DOCX 字体、PNG 尺寸、流程节点和 Markdown 相对链接，不重新生成文件。
 - `report`：生成并规范化 Word 报告，同步生成 Markdown。读取的是脚本中已核查的研究内容，不会重新检索互联网或自动更新行业数据。
 - `flow`：按固定访谈节点重绘流程图。修改访谈或业务规则后，需要人工同步维护节点说明和 Mermaid。
+- `ai-flow`：从同一组目标节点与分支生成 AI 转型目标流程图、说明和 Mermaid；明确区分系统、AI 与人工。这是未实施的方案，不会执行生产业务动作。
 - `all`：依次生成报告、绘图并校验。
 
 字体默认使用 Windows 微软雅黑。其他环境需要安装支持中文的字体，并设置 `DHLS_FONT_PATH` 和 `DHLS_FONT_BOLD_PATH` 指向实际字体文件。Markdown 的显示字体由阅读器决定；Word 中英文字体统一为微软雅黑。生成脚本不会下载或分发字体。

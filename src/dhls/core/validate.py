@@ -7,6 +7,7 @@ from urllib.parse import unquote
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 from dhls.utils.paths import ROOT, artifact_paths
+from dhls.core.target_flow import NODES
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
@@ -58,4 +59,13 @@ def check_repository(root=ROOT):
         errors.append("Flowchart Markdown lacks its 15-node Mermaid source")
     if "合成" not in paths["source"].read_text(encoding="utf-8"):
         errors.append("Source lacks synthetic-interview disclaimer")
+    with paths["ai_flow_png"].open("rb") as file:
+        header = file.read(24)
+    if header[:8] != b"\x89PNG\r\n\x1a\n" or struct.unpack(">II", header[16:24]) != (1800, 4050):
+        errors.append("Unexpected AI target flowchart PNG header or dimensions")
+    target_md = paths["ai_flow_md"].read_text(encoding="utf-8")
+    if "```mermaid" not in target_md or any(node.id not in target_md for node in NODES):
+        errors.append("AI target flowchart Markdown lacks its matching Mermaid source")
+    if "尚未实施" not in target_md or "脱敏只读" not in target_md:
+        errors.append("AI target flowchart must disclose proposed status and read-only scope")
     return errors

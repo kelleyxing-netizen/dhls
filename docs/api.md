@@ -8,6 +8,7 @@
 python scripts/build.py check
 python scripts/build.py report
 python scripts/build.py flow
+python scripts/build.py ai-flow
 python scripts/build.py all
 python scripts/sync.py --message "docs: 更新成果"
 ```
@@ -19,6 +20,7 @@ python scripts/sync.py --message "docs: 更新成果"
 - `dhls.main.main(argv=None) -> int`：分发构建及校验命令。
 - `dhls.core.generate.build_report()`：写入 `docs/reports/`，中间基稿写入 `.research/work/`。
 - `dhls.core.generate.build_flow()`：写入 `docs/assets/`，预览写入 `.research/`。
+- `dhls.core.generate.build_ai_flow()`：由 `core/target_flow.py` 中的目标节点和分支生成 AI 目标流程图及 Markdown，分别写入 `docs/assets/` 和 `docs/process/`。数据定义只用于图示，不是运行中的业务引擎。
 - `dhls.core.validate.check_repository(root=ROOT) -> list[str]`：返回问题列表，空列表表示结构检查通过。
 - `dhls.core.validate.local_link_errors(path, root=ROOT) -> list[str]`：检查本地 Markdown 链接，支持中文、URL 编码和锚点，不联网验证外链。
 - `dhls.utils.paths.artifact_paths(root=ROOT) -> dict[str, Path]`：读取 `config/default.json`，拒绝越出仓库的配置路径。
