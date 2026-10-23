@@ -5,5 +5,7 @@
   "flow_png": "docs/assets/展会排期与需求变更_访谈流程图.png",
   "flow_md": "docs/process/展会排期与需求变更_访谈流程图说明.md",
   "ai_flow_png": "docs/assets/展会排期与需求变更_AI数智化转型后流程图.png",
-  "ai_flow_md": "docs/process/展会排期与需求变更_AI数智化转型后流程图说明.md"
+  "ai_flow_md": "docs/process/展会排期与需求变更_AI数智化转型后流程图说明.md",
+  "quote_xlsx": "docs/reports/上海展会客户全流程报价单_参考版_20261023.xlsx",
+  "quote_docx": "docs/reports/上海展会客户全流程报价单_参考版_20261023.docx"
 }
