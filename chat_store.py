@@ -64,6 +64,22 @@ class Store:
                 CREATE INDEX IF NOT EXISTS message_history ON messages(conversation_id,seq_no);
                 CREATE INDEX IF NOT EXISTS session_list ON conversations(owner_user_id,updated_at);
             """)
+            # 【可复用核心：向前兼容迁移】旧库只追加字段，不重建/清空问答表。
+            # 旧演示身份没有密码，迁移后停用；不能把其记录归给第一个真实员工。
+            columns = {row["name"] for row in await (await db.execute("PRAGMA table_info(users)")).fetchall()}
+            if "role" not in columns:
+                await db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'employee' CHECK(role IN ('employee','admin'))")
+            if "password_hash" not in columns:
+                await db.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+                await db.execute("UPDATE users SET is_active=0 WHERE password_hash IS NULL")
+            await db.executescript("""
+                CREATE TABLE IF NOT EXISTS auth_sessions (
+                    id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id),
+                    csrf_hash TEXT NOT NULL, created_at INTEGER NOT NULL,
+                    expires_at INTEGER NOT NULL, revoked_at INTEGER
+                );
+                CREATE INDEX IF NOT EXISTS auth_session_owner ON auth_sessions(user_id,expires_at);
+            """)
             await db.commit()
         await self.recover_interrupted()
 

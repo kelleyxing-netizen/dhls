@@ -24,7 +24,11 @@
       <p id="session-list-note" class="session-list-note">正在加载会话…</p>
       <nav class="session-navigation" aria-label="最近会话"><ul id="session-list" class="session-list"></ul></nav>
       <p id="session-lock-note" class="session-lock-note" hidden>回答生成中，停止后可切换会话。</p>
-      <div class="sidebar-footer"><span class="footer-rule" aria-hidden="true"></span><p>让每一步运营<br>都有制度可循</p><span>查制度 · 看依据 · 再执行</span></div>
+      <!-- 当前账号由 /config 返回；管理员入口只是导航，服务端另行校验权限。 -->
+      <div class="sidebar-account">
+        <div class="chat-account-info"><span id="account-avatar" class="chat-account-avatar" aria-hidden="true">员</span><div><strong id="account-name">正在确认身份…</strong><span id="account-role">工作空间</span></div><button id="logout-button" class="account-logout" type="button" disabled>退出</button></div>
+        <a id="admin-link" class="chat-admin-link" href="/admin/knowledge" hidden>打开管理后台<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a>
+      </div>
     </aside>
 
     <main id="main" class="workspace">
@@ -33,7 +37,7 @@
         <div class="workspace-title"><h1>制度问答</h1><span id="current-session-title">新会话</span></div>
         <div class="header-actions"><button id="knowledge-status" class="knowledge-status" type="button" title="重新检查制度资料与模型"><span aria-hidden="true"></span><span id="knowledge-status-text">正在连接</span></button><button id="reload-history" class="icon-button" type="button" aria-label="重新加载当前会话" title="重新加载当前会话" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/></svg></button></div>
       </header>
-      <div id="demo-banner" class="demo-banner" hidden><strong>演示模式</strong><span>当前使用演示身份与虚构制度，仅用于原型验证。</span></div>
+      <div id="demo-banner" class="demo-banner" hidden><strong>示例制度</strong><span>当前知识库用于原型验证，具体业务请以企业正式制度为准。</span></div>
       <div id="notice" class="notice" role="alert" hidden><span id="notice-text"></span><button id="notice-action" type="button" hidden>重试</button><button id="dismiss-notice" class="notice-dismiss" type="button" aria-label="关闭提示">×</button></div>
 
       <section id="chat-scroll" class="chat-scroll" aria-label="问答内容" tabindex="0">

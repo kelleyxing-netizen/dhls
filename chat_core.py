@@ -15,7 +15,7 @@ from typing import Any, AsyncIterator
 
 import httpx
 
-from stage1_rag import (CHUNK_SIZE, DEFAULT_EMBEDDING_MODEL, LLMConfig, LocalEmbedder,
+from stage1_rag import (CHUNK_SIZE, DEFAULT_EMBEDDING_MODEL, SAMPLE_POLICY, LLMConfig, LocalEmbedder,
                         SearchHit, build_prompt, ensure_example_document, hybrid_search,
                         load_or_build_index, redact_for_llm, resolve_llm_config,
                         split_document, tokenize_chinese, validate_answer_sources)
@@ -36,7 +36,10 @@ class Settings:
     document: Path | None = None
     embedding_model: str = DEFAULT_EMBEDDING_MODEL
     offline: bool = False
-    demo_mode: bool = True
+    # 【可复用核心：身份配置】JWT签名密钥与模型API密钥彼此独立，均不参与repr。
+    jwt_secret: str | None = field(default=None, repr=False)
+    auth_cookie_secure: bool = False
+    auth_ttl_minutes: int = 60
     timeout: float = 60.0
     generation_timeout: float = 180.0
     heartbeat_seconds: float = 10.0
@@ -50,7 +53,9 @@ class Settings:
             document=Path(os.environ["RAG_DOCUMENT"]) if os.getenv("RAG_DOCUMENT") else None,
             embedding_model=os.getenv("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL),
             offline=os.getenv("EMBEDDING_OFFLINE", "0") == "1",
-            demo_mode=os.getenv("CHAT_DEMO_MODE", "1") == "1",
+            jwt_secret=os.getenv("AUTH_JWT_SECRET"),
+            auth_cookie_secure=os.getenv("AUTH_COOKIE_SECURE", "0") == "1",
+            auth_ttl_minutes=int(os.getenv("AUTH_TTL_MINUTES", "60")),
             timeout=float(os.getenv("LLM_TIMEOUT", "60")),
             generation_timeout=float(os.getenv("CHAT_GENERATION_TIMEOUT", "180")),
         )
@@ -61,6 +66,10 @@ class Settings:
             if not math.isfinite(value) or value <= 0:
                 raise ValueError("超时和心跳参数必须是有限正数。")
         self.data_dir, self.rag_dir = self.data_dir.resolve(), self.rag_dir.resolve()
+        if self.jwt_secret is not None and len(self.jwt_secret.encode("utf-8")) < 32:
+            raise ValueError("JWT签名密钥至少需要32字节，请使用独立的随机密钥。")
+        if not 5 <= self.auth_ttl_minutes <= 1440:
+            raise ValueError("登录有效期必须在5至1440分钟之间。")
 
     def model_config(self) -> LLMConfig:
         if self.llm_config is not None:
@@ -83,6 +92,7 @@ class KnowledgeBase:
 
         document = ensure_example_document(settings.rag_dir, settings.document)
         text = document.read_text(encoding="utf-8-sig")
+        self.is_sample_policy = text.strip() == SAMPLE_POLICY.strip()
         self.document_version = hashlib.sha256(text.encode("utf-8")).hexdigest()
         self.chunks = [c for c in split_document(text, document.name) if c.text.strip()]
         corpus = [tokenize_chinese(c.text) for c in self.chunks]

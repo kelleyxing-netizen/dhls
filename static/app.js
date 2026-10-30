@@ -10,11 +10,13 @@
     "notice", "notice-text", "notice-action", "dismiss-notice", "chat-scroll", "welcome",
     "history-loading", "conversation", "load-earlier", "messages", "reload-history",
     "jump-latest", "chat-form", "question", "composer-hint", "character-count",
-    "send-question", "stop-generation", "live-status",
+    "send-question", "stop-generation", "live-status", "account-avatar", "account-name",
+    "account-role", "logout-button", "admin-link",
   ].map((id) => [id, $(id)]));
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const mobileLayout = window.matchMedia("(max-width: 700px)");
   const STORAGE_KEY = "venue-policy-assistant:last-session";
+  const AUTH_REVISION_KEY = "venue-policy-assistant:auth-revision";
   const state = {
     configReady: false, knowledgeReady: false, modelReady: false, maxQuestionLength: 2000,
     sessions: [], sessionId: null, messages: [],
@@ -22,6 +24,7 @@
     historyError: false, historyVersion: 0, historyController: null,
     hasMore: false, nextBefore: null, loadingEarlier: false, listVersion: 0,
     autoScroll: true, noticeAction: null, messageViews: new Map(), sidebarOpen: false,
+    userId: null, csrfToken: "", authExpired: false, loggingOut: false,
   };
 
   class ApiError extends Error {
@@ -45,7 +48,51 @@
   function isBusy() { return Boolean(state.activeTurn || state.starting || state.creating); }
   function navigationLocked() { return isBusy() || state.loadingHistory || state.loadingEarlier; }
   function canSend() {
-    return state.configReady && state.knowledgeReady && state.modelReady && !navigationLocked() && !state.historyError;
+    return !state.authExpired && !state.loggingOut && state.configReady && state.knowledgeReady && state.modelReady && !navigationLocked() && !state.historyError;
+  }
+
+  function clearPrivateView() {
+    // 身份失效或账号切换时先清空画面，再跳转；中断旧请求，避免旧回包重新填入消息。
+    state.configReady = false;
+    state.csrfToken = "";
+    state.historyVersion += 1;
+    state.listVersion += 1;
+    state.historyController?.abort();
+    if (state.activeTurn) {
+      state.activeTurn.stopped = true;
+      if (state.activeTurn.typingTimer != null) clearTimeout(state.activeTurn.typingTimer);
+      state.activeTurn.controller.abort();
+      state.activeTurn = null;
+    }
+    state.sessionId = null;
+    state.sessions = [];
+    state.messages = [];
+    state.messageViews.clear();
+    ui.messages.replaceChildren();
+    ui["session-list"].replaceChildren();
+    ui.conversation.hidden = true;
+    ui.welcome.hidden = false;
+    ui.question.value = "";
+    ui["account-name"].textContent = "请重新登录";
+    ui["account-role"].textContent = "身份已失效";
+    ui["admin-link"].hidden = true;
+    ui["current-session-title"].textContent = "新会话";
+    updateControls();
+  }
+
+  function redirectToLogin() {
+    if (state.authExpired) return;
+    state.authExpired = true;
+    clearPrivateView();
+    window.location.replace("/login?next=%2F");
+  }
+
+  function clearRememberedSessions() {
+    try {
+      const keys = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index));
+      for (const key of keys) if (key === STORAGE_KEY || key?.startsWith(`${STORAGE_KEY}:`)) localStorage.removeItem(key);
+      localStorage.setItem(AUTH_REVISION_KEY, uuid());
+    } catch { /* 存储不可用时仍然正常退出，服务端会撤销登录记录。 */ }
   }
 
   function showNotice(message, action = null, label = "重试") {
@@ -71,11 +118,17 @@
     try {
       response = await fetch(path, {
         credentials: "same-origin", cache: "no-store", ...options,
-        headers: { Accept: "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },
+        // 可复用：写请求统一携带内存 CSRF 令牌；JWT 只通过 HttpOnly Cookie 自动发送。
+        headers: { Accept: "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(!["GET", "HEAD", "OPTIONS"].includes((options.method || "GET").toUpperCase()) ? { "X-CSRF-Token": state.csrfToken } : {}), ...options.headers },
       });
     } catch (error) {
       if (error.name === "AbortError") throw error;
       throw new ApiError("连接服务失败，请检查网络后重试。", "NETWORK_ERROR", true);
+    }
+    if (response.status === 401) {
+      redirectToLogin();
+      throw new ApiError("登录已失效，请重新登录。", "UNAUTHORIZED");
     }
     let envelope;
     try { envelope = await response.json(); }
@@ -87,12 +140,16 @@
   }
 
   function saveSession(id) {
-    try { if (id) localStorage.setItem(STORAGE_KEY, id); else localStorage.removeItem(STORAGE_KEY); }
+    if (!state.userId) return;
+    const key = `${STORAGE_KEY}:${state.userId}`;
+    try { if (id) localStorage.setItem(key, id); else localStorage.removeItem(key); }
     catch { /* 隐私模式禁用存储时，会话仍可通过左栏恢复。 */ }
   }
   function rememberedSession() {
+    if (!state.userId) return null;
     try {
-      const value = localStorage.getItem(STORAGE_KEY);
+      // 同一浏览器切换员工账号时不恢复其他人的会话编号；服务端仍会校验消息所有权。
+      const value = localStorage.getItem(`${STORAGE_KEY}:${state.userId}`);
       return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value || "") ? value : null;
     } catch { return null; }
   }
@@ -168,13 +225,25 @@
     updateControls();
     try {
       const config = await api("/config");
+      if (state.authExpired) return;
+      if (!config?.user?.id || !["admin", "employee"].includes(config.user.role) || !config.csrf_token) {
+        throw new ApiError("登录信息不完整，请刷新页面或重新登录。", "INVALID_RESPONSE");
+      }
+      if (state.userId && state.userId !== config.user.id) { window.location.reload(); return; }
+      state.userId = config.user.id;
+      state.csrfToken = config.csrf_token;
+      ui["account-name"].textContent = config.user.display_name || "当前用户";
+      ui["account-role"].textContent = config.user.role === "admin" ? "管理员" : "员工";
+      ui["account-avatar"].textContent = config.user.role === "admin" ? "管" : "员";
+      ui["admin-link"].hidden = config.user.role !== "admin";
+      ui["logout-button"].disabled = false;
       state.configReady = true;
       state.knowledgeReady = config?.knowledge_ready === true;
       state.modelReady = config?.model_ready === true;
       const configuredLimit = Number(config?.max_question_length);
       state.maxQuestionLength = Number.isInteger(configuredLimit) && configuredLimit > 0 ? configuredLimit : 2000;
       ui.question.maxLength = state.maxQuestionLength;
-      ui["demo-banner"].hidden = config?.demo_mode !== true;
+      ui["demo-banner"].hidden = config?.knowledge_is_demo !== true;
       ui["knowledge-status"].className = `knowledge-status ${state.knowledgeReady && state.modelReady ? "is-ready" : "is-unavailable"}`;
       ui["knowledge-status-text"].textContent = !state.modelReady ? "模型尚未配置" : state.knowledgeReady ? "制度资料已就绪" : "制度资料未就绪";
       if (!state.knowledgeReady) showNotice("制度资料尚未就绪，请准备好资料后重新检查。", loadConfig, "重新检查");
@@ -190,7 +259,8 @@
   function updateControls() {
     const busy = isBusy();
     const locked = navigationLocked();
-    ui["new-session"].disabled = locked || !state.configReady;
+    ui["new-session"].disabled = locked || !state.configReady || state.loggingOut || state.authExpired;
+    ui["logout-button"].disabled = !state.userId || state.loggingOut || state.authExpired;
     ui["reload-history"].disabled = locked || !state.sessionId;
     ui.question.disabled = !canSend();
     ui["send-question"].disabled = !canSend() || !ui.question.value.trim() || ui.question.value.length > state.maxQuestionLength;
@@ -666,9 +736,13 @@
     try {
       const response = await fetch("/chat", {
         method: "POST", credentials: "same-origin", cache: "no-store", signal: turn.controller.signal,
-        headers: { "Content-Type": "application/json", Accept: "text/event-stream", "Idempotency-Key": request.key },
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream", "Idempotency-Key": request.key, "X-CSRF-Token": state.csrfToken },
         body: JSON.stringify({ session_id: request.sessionId, question: request.question }),
       });
+      if (response.status === 401) {
+        redirectToLogin();
+        throw new ApiError("登录已失效，请重新登录。", "UNAUTHORIZED");
+      }
       if (!response.ok) {
         let envelope;
         try { envelope = await response.json(); } catch { /* 非 JSON 的代理错误使用统一提示。 */ }
@@ -793,6 +867,21 @@
     announce("已停止生成。");
   }
 
+  async function logout() {
+    if (state.loggingOut || state.authExpired) return;
+    state.loggingOut = true;
+    stopGeneration();
+    updateControls();
+    try {
+      await api("/auth/logout", { method: "POST" });
+      clearRememberedSessions();
+      clearPrivateView();
+      window.location.replace("/login");
+    } catch (error) {
+      if (!state.authExpired) showNotice(error.message || "退出失败，请稍后重试。");
+    } finally { state.loggingOut = false; updateControls(); }
+  }
+
   function resizeQuestion() {
     ui.question.style.height = "auto";
     ui.question.style.height = `${Math.min(ui.question.scrollHeight, mobileLayout.matches ? 130 : 160)}px`;
@@ -836,6 +925,7 @@
   ui["knowledge-status"].addEventListener("click", loadConfig);
   ui["load-earlier"].addEventListener("click", loadEarlier);
   ui["stop-generation"].addEventListener("click", stopGeneration);
+  ui["logout-button"].addEventListener("click", logout);
   ui["dismiss-notice"].addEventListener("click", hideNotice);
   ui["notice-action"].addEventListener("click", () => { const action = state.noticeAction; hideNotice(); if (action) action(); });
   ui["open-sidebar"].addEventListener("click", openSidebar);
@@ -856,10 +946,25 @@
   });
   mobileLayout.addEventListener("change", () => { closeSidebar(); resizeQuestion(); });
   window.addEventListener("beforeunload", () => state.activeTurn?.controller.abort());
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    state.authExpired = true;
+    clearPrivateView();
+    window.location.reload();
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key !== AUTH_REVISION_KEY) return;
+    // 其他标签页登录或退出会改变同源 Cookie，立即清除当前账号画面并重新取身份。
+    state.authExpired = true;
+    clearPrivateView();
+    window.location.reload();
+  });
 
   async function initialize() {
-    // 初始化查询互不依赖；会话历史等列表就绪后恢复，避免旧请求覆盖新会话。
-    await Promise.allSettled([loadConfig(), refreshSessions()]);
+    // 先取得真实身份及 CSRF，再加载该账号的会话，避免跨账号恢复旧本地记录。
+    await loadConfig();
+    if (!state.configReady || state.authExpired) return;
+    await refreshSessions();
     const previous = rememberedSession();
     if (previous && !navigationLocked()) await loadSession(previous);
     updateControls();

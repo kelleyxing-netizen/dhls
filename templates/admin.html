@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#183247">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  {% set titles = {'knowledge': '制度知识库', 'prompts': '提示词模板', 'conversations': '对话审阅'} %}
+  <title>{{ titles.get(active_page, '管理后台') }} · 场馆运营</title>
+  <link rel="stylesheet" href="/static/admin.css">
+  <script src="/static/auth.js" defer></script>
+</head>
+<body class="admin-page">
+  <a class="skip-link" href="#admin-main">跳到管理内容</a>
+  <!-- 可复用：页面显示依赖服务端权限判断；隐藏导航不能替代接口级鉴权。 -->
+  <div class="admin-layout">
+    <aside class="admin-sidebar" aria-label="管理导航">
+      <a class="product-brand" href="/admin/knowledge"><svg class="brand-symbol" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 12 16 6l11 6M7 14v12m9-12v12m9-12v12M4 27h24"/></svg><span>场馆运营<span class="brand-subtitle">管理工作台</span></span></a>
+      <div class="sidebar-section-title">管理后台</div>
+      <nav class="admin-navigation" aria-label="管理功能">
+        <a href="/admin/knowledge"{% if active_page == 'knowledge' %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v14H7a2 2 0 0 1-2-2V4Zm0 15a2 2 0 0 1 2-2h12M9 8h6M9 12h4"/></svg><span>制度知识库</span></a>
+        <a href="/admin/prompts"{% if active_page == 'prompts' %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Zm4 4h8M8 12h5"/></svg><span>提示词模板</span></a>
+        <a href="/admin/conversations"{% if active_page == 'conversations' %} aria-current="page"{% endif %}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3"/></svg><span>对话审阅</span></a>
+      </nav>
+      <a class="back-to-chat" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6-6 6 6 6M4 12h16"/></svg>返回制度问答</a>
+      <div class="admin-account"><span class="account-avatar" aria-hidden="true">管</span><div><strong>{{ user.display_name }}</strong><span>管理员</span></div><button id="logout-button" class="text-button" type="button">退出</button></div>
+    </aside>
+    <div class="admin-workspace">
+      <header class="admin-topbar"><p>场馆排期与需求变更</p><span class="role-indicator"><span aria-hidden="true"></span>管理员工作空间</span></header>
+      <main id="admin-main" class="admin-main" tabindex="-1">
+        <div class="page-heading"><div><p class="page-context">管理后台</p><h1>{{ titles.get(active_page, '管理后台') }}</h1></div><a class="secondary-button" href="/">打开制度问答</a></div>
+        <div id="auth-notice" class="auth-notice" role="alert" hidden></div>
+        <!-- 本批仅验证登录、授权与导航；不把未接入的功能伪装成可用管理操作。 -->
+        {% if active_page == 'knowledge' %}
+        <p class="page-description">维护员工问答引用的制度、标准与审批流程。</p>
+        <section class="pending-panel" aria-labelledby="pending-title"><div class="pending-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M13 7h18l6 6v28H13zM30 7v8h7M19 22h12M19 28h12M19 34h7"/></svg></div><div><span class="feature-status">功能待接入</span><h2 id="pending-title">知识库管理尚未启用</h2><p>后续可在此上传 Markdown、PDF 制度文件，查看解析结果并管理文档。当前问答继续使用已配置的制度资料。</p></div></section>
+        {% elif active_page == 'prompts' %}
+        <p class="page-description">维护制度助手的回答规则，让每次问答遵循统一要求。</p>
+        <section class="pending-panel" aria-labelledby="pending-title"><div class="pending-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 10h32v24H20L8 42V10ZM16 18h16M16 25h10"/></svg></div><div><span class="feature-status">功能待接入</span><h2 id="pending-title">提示词编辑尚未启用</h2><p>后续可在此编辑系统提示词、查看版本记录；保存的模板将用于新的问答请求。</p></div></section>
+        {% elif active_page == 'conversations' %}
+        <p class="page-description">按员工和时间核对问答记录，记录需要进一步审查的内容。</p>
+        <section class="pending-panel" aria-labelledby="pending-title"><div class="pending-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M12 7h24v34H12zM19 16h10M19 23h10M19 30h6"/></svg></div><div><span class="feature-status">功能待接入</span><h2 id="pending-title">对话审阅尚未启用</h2><p>后续可在此筛选对话、查看引用来源并标记疑似违规问答。目前制度问答页仅显示当前账号自己的会话。</p></div></section>
+        {% endif %}
+        <p class="admin-scope-note">当前账号已通过管理员权限校验。管理功能将按已确认的批次逐步接入。</p>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

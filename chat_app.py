@@ -1,4 +1,4 @@
-"""阶段2员工聊天入口：FastAPI＋SQLite＋原生前端，默认仅在本机演示。
+"""员工聊天与管理后台入口：FastAPI＋SQLite＋JWT，默认仅在本机运行。
 
 启动：python chat_app.py
 依赖：python -m pip install -r requirements.txt
@@ -21,18 +21,19 @@ from typing import Any
 import httpx
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.exceptions import HTTPException
 
 from chat_core import ChatError, KnowledgeBase, Settings, answer_sources, build_chat_messages, stream_llm
 from chat_store import Store
+from chat_auth import AuthService, COOKIE_NAME, current_user, public_user, require_admin
 
 logger = logging.getLogger("venue_chat")
 STATIC_DIR = Path(__file__).parent / "static"
-DEMO_USER = {"id": "9fbcd373-13c0-4884-bfb4-64e61987f306", "login_subject": "demo-employee",
-             "display_name": "演示员工", "department_id": "demo-sales", "venue_id": "demo-east"}
+templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
 
 def envelope(code: str = "OK", message: str = "成功", data: Any = None, request_id: str = "") -> dict:
@@ -63,8 +64,8 @@ class ErrorBoundary:
                 started = True
                 message["headers"] = [*message.get("headers", []),
                     (b"x-request-id", request_id.encode()), (b"x-content-type-options", b"nosniff"),
-                    (b"referrer-policy", b"same-origin"),
-                    (b"content-security-policy", b"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'")]
+                    (b"referrer-policy", b"same-origin"), (b"cache-control", b"no-store"),
+                    (b"content-security-policy", b"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")]
             await send(message)
 
         try:
@@ -196,13 +197,11 @@ async def heartbeat_stream(iterator, interval: float):
         await iterator.aclose()
 
 
-async def current_user(request: Request) -> dict:
-    """当前仅提供本机演示身份；后续替换为企业SSO，禁止接受前端owner_user_id。"""
-    host = request.client.host if request.client else ""
-    if not request.app.state.settings.demo_mode or host not in {"127.0.0.1", "::1", "localhost", "testclient"}:
-        raise ChatError("UNAUTHORIZED", "当前仅开放本机演示，员工认证尚未接入。", 401)
-    await request.app.state.store.ensure_user(DEMO_USER)
-    return DEMO_USER.copy()
+class LoginInput(BaseModel):
+    """登录只接受JSON，限制字段及长度；响应不返回密码和JWT正文。"""
+    model_config = ConfigDict(extra="forbid")
+    username: str = Field(min_length=3, max_length=64)
+    password: str = Field(min_length=1, max_length=128)
 
 
 class SessionInput(BaseModel):
@@ -243,12 +242,14 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
         instance_lock.acquire()
         try:
             await store.initialize()
+            app.state.auth = AuthService(store, settings)
             app.state.retriever, app.state.document_version = retriever, ""
             if retriever is None:
                 try:
                     kb = await asyncio.to_thread(KnowledgeBase, settings)
                     app.state.retriever = kb.search
                     app.state.document_version = kb.document_version
+                    app.state.knowledge_is_demo = kb.is_sample_policy
                 except Exception as error:
                     logger.error("制度索引初始化失败 type=%s", type(error).__name__)
             async with httpx.AsyncClient(follow_redirects=False) as client:
@@ -257,21 +258,27 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
         finally:
             instance_lock.release()
 
-    app = FastAPI(title="场馆制度问答", version="0.7.0", lifespan=lifespan,
+    app = FastAPI(title="场馆制度问答与管理后台", version="0.8.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None)
     app.state.settings, app.state.store = settings, store
     app.state.retriever, app.state.document_version = retriever, ""
+    app.state.knowledge_is_demo = False
     app.state.llm_stream = llm_stream or stream_llm
     app.add_middleware(ErrorBoundary)
 
     @app.exception_handler(ChatError)
     async def chat_error(request, error):
+        # 页面导航跳转登录；API始终保留HTTP错误码与统一中文JSON信封。
+        if error.status == 401 and request.method == "GET" and (
+            request.url.path == "/" or request.url.path in {"/admin", "/admin/knowledge", "/admin/prompts", "/admin/conversations"}
+        ):
+            return RedirectResponse("/login", status_code=303)
         return JSONResponse(envelope(error.code, error.message, {"retryable": error.retryable},
                                       request.state.request_id), status_code=error.status)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request, error):
-        return JSONResponse(envelope("INVALID_REQUEST", "请求参数不正确，请检查问题和会话编号。",
+        return JSONResponse(envelope("INVALID_REQUEST", "请求参数不正确，请检查必填项、格式和长度。",
                                       {"retryable": False}, request.state.request_id), status_code=422)
 
     @app.exception_handler(HTTPException)
@@ -288,8 +295,59 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
                                       {"retryable": True}, request.state.request_id), status_code=500)
 
     @app.get("/")
-    async def page():
+    async def page(user=Depends(current_user)):
         return FileResponse(STATIC_DIR / "index.html", media_type="text/html")
+
+    @app.get("/login")
+    async def login_page(request: Request):
+        # 已登录的访问者直接进入其工作入口，不在模板中暴露JWT。
+        try:
+            user = await app.state.auth.authenticate(request)
+        except ChatError:
+            return templates.TemplateResponse(request=request, name="login.html", context={})
+        return RedirectResponse("/admin/knowledge" if user["role"] == "admin" else "/", status_code=303)
+
+    @app.post("/auth/login")
+    async def login(body: LoginInput, request: Request):
+        if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "application/json":
+            raise ChatError("INVALID_REQUEST", "登录请求须使用JSON格式。", 415)
+        token, user = await app.state.auth.login(request, body.username, body.password)
+        response = JSONResponse(envelope(message="登录成功", data=user, request_id=request.state.request_id))
+        response.set_cookie(COOKIE_NAME, token, max_age=settings.auth_ttl_minutes * 60,
+                            httponly=True, secure=settings.auth_cookie_secure, samesite="strict", path="/")
+        return response
+
+    @app.get("/auth/me")
+    async def me(request: Request, user=Depends(current_user)):
+        return envelope(data={**public_user(user), "csrf_token": user["csrf_token"]}, request_id=request.state.request_id)
+
+    @app.post("/auth/logout")
+    async def logout(request: Request, user=Depends(current_user)):
+        await app.state.auth.logout(user)
+        response = JSONResponse(envelope(message="已退出登录", request_id=request.state.request_id))
+        response.delete_cookie(COOKIE_NAME, path="/", secure=settings.auth_cookie_secure,
+                               httponly=True, samesite="strict")
+        return response
+
+    @app.get("/admin")
+    async def admin_root(user=Depends(require_admin)):
+        return RedirectResponse("/admin/knowledge", status_code=303)
+
+    # 【可复用核心：后台路由保护】本批只提供入口骨架，后续批次接入真实管理操作。
+    @app.get("/admin/knowledge")
+    @app.get("/admin/prompts")
+    @app.get("/admin/conversations")
+    async def admin_page(request: Request, user=Depends(require_admin)):
+        return templates.TemplateResponse(request=request, name="admin.html", context={
+            "user": public_user(user), "csrf_token": user["csrf_token"],
+            "active_page": request.url.path.rsplit("/", 1)[-1]})
+
+    @app.get("/admin/api/status")
+    async def admin_status(request: Request, user=Depends(require_admin)):
+        # 仅用于确认当前管理入口权限；没有暴露其他员工数据或未实现的虚构统计。
+        return envelope(data={"role": user["role"], "department_id": user["department_id"],
+                              "venue_id": user["venue_id"], "implemented_batch": 1},
+                        request_id=request.state.request_id)
 
     @app.get("/config")
     async def config(request: Request, user=Depends(current_user)):
@@ -298,9 +356,10 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
             model_ready = True
         except ChatError:
             model_ready = False
-        return envelope(data={"demo_mode": settings.demo_mode, "knowledge_ready": app.state.retriever is not None,
+        return envelope(data={"demo_mode": False, "knowledge_is_demo": app.state.knowledge_is_demo,
+            "knowledge_ready": app.state.retriever is not None,
             "model_ready": model_ready, "history_rounds": 6, "max_question_length": 2000,
-            "user": {"display_name": user.get("display_name", "演示员工")}}, request_id=request.state.request_id)
+            "csrf_token": user.get("csrf_token", ""), "user": public_user(user)}, request_id=request.state.request_id)
 
     @app.post("/sessions", status_code=201)
     async def new_session(body: SessionInput, request: Request, user=Depends(current_user)):
@@ -422,5 +481,6 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
-    # 本阶段只有演示身份，固定本机监听及单worker；不宣称具备企业SSO安全边界。
-    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("CHAT_PORT", "8000")), workers=1)
+    # 本轮仍固定本机与单worker；企业私有云入口应另配HTTPS/受信代理与部署密钥。
+    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("CHAT_PORT", "8000")), workers=1,
+                proxy_headers=False)

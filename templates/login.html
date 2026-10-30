@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#183247">
+  <title>登录 · 场馆运营制度助手</title>
+  <link rel="stylesheet" href="/static/admin.css">
+  <script src="/static/auth.js" defer></script>
+</head>
+<body class="login-page">
+  <!-- 可复用：登录页不接触 JWT 正文，身份凭据由服务端 HttpOnly Cookie 保存。 -->
+  <main class="login-layout">
+    <section class="login-introduction" aria-labelledby="product-title">
+      <a class="product-brand" href="/login" aria-label="场馆运营制度助手登录页">
+        <svg class="brand-symbol" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 12 16 6l11 6M7 14v12m9-12v12m9-12v12M4 27h24"/></svg>
+        <span>场馆运营<span class="brand-subtitle">制度助手</span></span>
+      </a>
+      <div class="login-story">
+        <p class="story-context">场馆排期与需求变更</p>
+        <h1 id="product-title">每一次变更，<br>都有制度可循。</h1>
+        <p class="story-description">从档期调整到审批要求，<br>查清制度，再推进下一步。</p>
+        <!-- 场馆平面与制度条目仅作产品主题图形，无虚构排期或业务统计。 -->
+        <div class="venue-illustration" aria-hidden="true">
+          <svg viewBox="0 0 440 190" fill="none">
+            <path class="venue-grid" d="M0 38h440M0 76h440M0 114h440M0 152h440M44 0v190M88 0v190M132 0v190M176 0v190M220 0v190M264 0v190M308 0v190M352 0v190M396 0v190"/>
+            <path class="venue-outline" d="M42 46h214v106H42zM63 67h172v64H63zM89 67v64M209 67v64M63 99h172M256 72h65v54h-65M321 46h77v106h-77M339 65h41v68h-41"/>
+            <path class="venue-accent" d="M42 46h47v21H63v32H42M209 131v21h47v-26M339 65h41v26h-41z"/>
+            <path class="venue-entry" d="M123 152v18h51v-18M147 170v16M139 178l8 8 8-8M321 99h18"/>
+            <circle class="venue-node" cx="89" cy="46" r="3"/><circle class="venue-node" cx="256" cy="126" r="3"/>
+          </svg>
+          <div class="illustration-caption"><span>查制度</span><span>看依据</span><span>再执行</span></div>
+        </div>
+      </div>
+      <p class="login-footer">场馆运营协同工作空间</p>
+    </section>
+    <section class="login-form-section" aria-labelledby="login-title">
+      <div class="login-form-container">
+        <div class="login-heading"><span class="section-rule" aria-hidden="true"></span><h2 id="login-title">登录工作空间</h2><p>使用管理员为你创建的账号登录。</p></div>
+        <div id="auth-notice" class="auth-notice" role="alert" hidden></div>
+        <form id="login-form" class="login-form" action="/auth/login" method="post">
+          <div class="form-field"><label for="username">账号</label><input id="username" name="username" type="text" autocomplete="username" required maxlength="64" autocapitalize="none" spellcheck="false" placeholder="输入登录账号"></div>
+          <div class="form-field"><label for="password">密码</label><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128" placeholder="输入密码"></div>
+          <button id="login-submit" class="primary-button login-submit" type="submit" disabled>登录</button>
+        </form>
+        <p class="login-help">没有账号或忘记密码？请联系系统管理员。</p>
+        <noscript><p class="auth-notice">请启用浏览器 JavaScript 后登录。</p></noscript>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
