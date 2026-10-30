@@ -9,13 +9,13 @@ import asyncio
 import json
 import sys
 
-from agent_business import bootstrap_demo
-from chat_core import ChatError, Settings
-from chat_store import Store
+from dhls.core.agent_business import bootstrap_demo
+from dhls.core.chat import ChatError, Settings
+from dhls.core.store import Store
 
 
 async def run(args):
-    from chat_app import InstanceLock
+    from dhls.utils.locks import InstanceLock
 
     settings = Settings.from_env()
     settings.validate()

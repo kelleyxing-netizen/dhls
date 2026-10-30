@@ -1,0 +1,8 @@
+# 源码包附带可运行脚本、样例、评测与当前文档；wheel只携带运行所需包资源。
+include README.md LICENSE CHANGELOG.md CONTRIBUTING.md requirements.txt
+include docs/*.md
+recursive-include scripts *.py *.ps1 *.md
+recursive-include examples *.py
+recursive-include config *.toml *.md
+recursive-include data *.json *.md
+recursive-include tests *.py

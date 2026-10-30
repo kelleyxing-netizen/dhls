@@ -15,7 +15,7 @@ from typing import Any, AsyncIterator
 
 import httpx
 
-from stage1_rag import (CHUNK_SIZE, DEFAULT_EMBEDDING_MODEL, SAMPLE_POLICY, LLMConfig, LocalEmbedder,
+from dhls.core.rag import (CHUNK_SIZE, DEFAULT_EMBEDDING_MODEL, SAMPLE_POLICY, LLMConfig, LocalEmbedder,
                         SearchHit, build_prompt, ensure_example_document, hybrid_search,
                         load_or_build_index, redact_for_llm, resolve_llm_config,
                         split_document, tokenize_chinese, validate_answer_sources)
@@ -30,9 +30,11 @@ class ChatError(Exception):
 
 @dataclass
 class Settings:
-    """配置仅来自环境或显式注入；密钥不写入SQLite、网页及日志。"""
-    data_dir: Path = field(default_factory=lambda: Path(__file__).parent / ".chat_data")
-    rag_dir: Path = field(default_factory=lambda: Path(__file__).parent / ".stage1_rag")
+    """配置仅来自环境或显式注入；默认数据目录相对当前工作目录，不写安装目录。
+
+    密钥不写入SQLite、网页及日志；部署时应显式设置两个数据目录。"""
+    data_dir: Path = field(default_factory=lambda: Path.cwd() / ".chat_data")
+    rag_dir: Path = field(default_factory=lambda: Path.cwd() / ".stage1_rag")
     document: Path | None = None
     embedding_model: str = DEFAULT_EMBEDDING_MODEL
     offline: bool = False
@@ -48,8 +50,8 @@ class Settings:
     @classmethod
     def from_env(cls) -> Settings:
         result = cls(
-            data_dir=Path(os.getenv("CHAT_DATA_DIR", str(Path(__file__).parent / ".chat_data"))),
-            rag_dir=Path(os.getenv("RAG_WORK_DIR", str(Path(__file__).parent / ".stage1_rag"))),
+            data_dir=Path(os.getenv("CHAT_DATA_DIR", str(Path.cwd() / ".chat_data"))),
+            rag_dir=Path(os.getenv("RAG_WORK_DIR", str(Path.cwd() / ".stage1_rag"))),
             document=Path(os.environ["RAG_DOCUMENT"]) if os.getenv("RAG_DOCUMENT") else None,
             embedding_model=os.getenv("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL),
             offline=os.getenv("EMBEDDING_OFFLINE", "0") == "1",

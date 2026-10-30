@@ -10,8 +10,8 @@ import uuid
 from fastapi import Depends, Request
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 
-from chat_auth import current_user, public_user
-from chat_core import ChatError
+from dhls.core.auth import current_user, public_user
+from dhls.core.chat import ChatError
 
 
 class AgentInput(BaseModel):

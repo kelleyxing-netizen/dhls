@@ -1,0 +1,34 @@
+# 非机密配置参考；当前程序不会读取或合并此文件。
+# 运行仍以 Settings.from_env() / 显式依赖注入为准，说明见 config/README.md。
+# 路径为默认进程工作目录下的相对表示，不表示相对本 TOML 文件解析。
+# 从仓库根目录启动即落在仓库根；从其他目录启动则落在相应工作目录。
+
+[settings]
+data_dir = ".chat_data"
+rag_dir = ".stage1_rag"
+# document 的默认值为 None；TOML 没有 null，因此省略该键。
+# jwt_secret 的默认值为 None；禁止在此文件填写 JWT 密钥。
+embedding_model = "BAAI/bge-small-zh-v1.5"
+offline = false
+auth_cookie_secure = false
+auth_ttl_minutes = 60
+timeout = 60.0
+generation_timeout = 180.0
+# 当前 heartbeat_seconds 仅支持代码显式注入，没有对应环境变量。
+heartbeat_seconds = 10.0
+# llm_config 默认为 None，运行时通过下列环境映射装配；此处不含密钥值。
+
+[model]
+# 下列为 Settings.model_config() 调用供应商适配器时的默认参数。
+provider = "deepseek"
+base_url = "https://api.deepseek.com"
+name = "deepseek-flash"
+# 这是保存密钥的环境变量名，绝不是密钥值。
+api_key_env = "DEEPSEEK_API_KEY"
+
+[server]
+# 启动入口的默认值，不属于 Settings 字段。
+host = "127.0.0.1"
+port = 8000
+workers = 1
+proxy_headers = false

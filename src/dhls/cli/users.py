@@ -11,9 +11,9 @@ import getpass
 import sys
 import time
 
-from chat_auth import PASSWORD_HASH, clean_username, create_user, validate_password
-from chat_core import ChatError, Settings
-from chat_store import Store
+from dhls.core.auth import PASSWORD_HASH, clean_username, create_user, validate_password
+from dhls.core.chat import ChatError, Settings
+from dhls.core.store import Store
 
 
 def read_new_password() -> str:
@@ -28,7 +28,7 @@ def read_new_password() -> str:
 
 async def run(args):
     # 复用服务的OS实例锁。禁止运维命令在服务生成回答时执行启动恢复或账号迁移。
-    from chat_app import InstanceLock
+    from dhls.utils.locks import InstanceLock
 
     settings = Settings.from_env()
     settings.validate()

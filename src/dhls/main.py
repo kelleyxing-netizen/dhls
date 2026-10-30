@@ -1,6 +1,6 @@
 """员工聊天与管理后台入口：FastAPI＋SQLite＋JWT，默认仅在本机运行。
 
-启动：python chat_app.py
+启动：python -m dhls
 依赖：python -m pip install -r requirements.txt
 模型密钥从环境变量读取，沿用阶段1的DEEPSEEK_API_KEY/LLM_*配置。
 """
@@ -27,9 +27,11 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.exceptions import HTTPException
 
-from chat_core import ChatError, KnowledgeBase, Settings, answer_sources, build_chat_messages, stream_llm
-from chat_store import Store
-from chat_auth import AuthService, COOKIE_NAME, current_user, public_user, require_admin
+from dhls.core.chat import ChatError, KnowledgeBase, Settings, answer_sources, build_chat_messages, stream_llm
+from dhls.core.store import Store
+from dhls.core.auth import AuthService, COOKIE_NAME, current_user, public_user, require_admin
+
+from dhls.utils.locks import InstanceLock
 
 logger = logging.getLogger("venue_chat")
 STATIC_DIR = Path(__file__).parent / "static"
@@ -77,39 +79,6 @@ class ErrorBoundary:
                 response = JSONResponse(envelope("INTERNAL_ERROR", "服务暂时异常，请稍后重试。",
                                                   {"retryable": True}, request_id), status_code=500)
                 await response(scope, receive, safe_send)
-
-
-class InstanceLock:
-    """SQLite原型限定单个服务进程，防止另一实例的启动恢复误伤正在生成的消息。
-
-    使用操作系统文件锁，进程崩溃会自动释放，不依赖永久残留的PID文件。
-    """
-    def __init__(self, path: Path):
-        self.path, self.handle = path, None
-
-    def acquire(self):
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.handle = self.path.open("a+b")
-        if self.path.stat().st_size == 0:
-            self.handle.write(b"0")
-            self.handle.flush()
-        self.handle.seek(0)
-        try:
-            if os.name == "nt":
-                import msvcrt
-                msvcrt.locking(self.handle.fileno(), msvcrt.LK_NBLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            self.handle.close()
-            self.handle = None
-            raise RuntimeError("该数据目录已有聊天服务运行，请关闭重复实例；本原型仅支持单进程。") from None
-
-    def release(self):
-        if self.handle is not None:
-            self.handle.close()
-            self.handle = None
 
 
 class ManagedStreamingResponse(StreamingResponse):
@@ -255,10 +224,10 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
             async with httpx.AsyncClient(follow_redirects=False) as client:
                 app.state.llm_client = client
                 # 【可复用核心：Agent生命周期】业务表与断点均本地持久化，不启动CLI子进程。
-                from agent_business import AgentBusiness
-                from agent_loop import AgentHarness
+                from dhls.core.agent_business import AgentBusiness
+                from dhls.core.agent_loop import AgentHarness
                 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-                from agent_state import AgentStateStore
+                from dhls.core.agent_state import AgentStateStore
                 async with AsyncExitStack() as stack:
                     checkpoint = await stack.enter_async_context(AsyncSqliteSaver.from_conn_string(str(settings.data_dir / "agent-checkpoints.sqlite3")))
                     await checkpoint.setup()
@@ -270,7 +239,7 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
         finally:
             instance_lock.release()
 
-    app = FastAPI(title="场馆制度问答与管理后台", version="0.9.0", lifespan=lifespan,
+    app = FastAPI(title="场馆制度问答与管理后台", version="0.10.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None)
     app.state.settings, app.state.store = settings, store
     app.state.retriever, app.state.document_version = retriever, ""
@@ -485,7 +454,7 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
         return ManagedStreamingResponse(heartbeat_stream(generate(), settings.heartbeat_seconds), cleanup)
 
     # 静态资源同源提供，不引入CDN或跨域模型密钥；404仍由中文错误处理器接管。
-    from agent_routes import install_agent_routes
+    from dhls.api.agent import install_agent_routes
     install_agent_routes(app, templates, ManagedStreamingResponse, heartbeat_stream, sse)
     app.mount("/static", StaticFiles(directory=STATIC_DIR, check_dir=False), name="static")
     return app
@@ -493,8 +462,20 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
 
 app = create_app()
 
-if __name__ == "__main__":
+def main() -> None:
+    """安装后的同步入口；仍限制本机单进程，不隐式开放网络。"""
+    import argparse
     import uvicorn
+
+    parser = argparse.ArgumentParser(description="场馆制度问答与Agent服务（本机单进程）")
+    parser.add_argument("--port", type=int, default=os.getenv("CHAT_PORT", "8000"), help="本机监听端口，默认8000")
+    args = parser.parse_args()
+    if not 1 <= args.port <= 65535:
+        parser.error("端口必须在1至65535之间")
     # 本轮仍固定本机与单worker；企业私有云入口应另配HTTPS/受信代理与部署密钥。
-    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("CHAT_PORT", "8000")), workers=1,
+    uvicorn.run(app, host="127.0.0.1", port=args.port, workers=1,
                 proxy_headers=False)
+
+
+if __name__ == "__main__":
+    main()

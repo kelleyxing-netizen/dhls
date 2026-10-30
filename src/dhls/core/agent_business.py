@@ -18,9 +18,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
-from chat_core import ChatError
-from chat_store import Store, now
-from stage1_rag import redact_for_llm
+from dhls.core.chat import ChatError
+from dhls.core.store import Store, now
+from dhls.core.rag import redact_for_llm
 
 RECEIPT_SECONDS = 600
 DEMO_RULE_VERSION = "DEMO-AGENT-1"

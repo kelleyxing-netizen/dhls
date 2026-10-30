@@ -4,13 +4,13 @@
 
 用户于2026年10月24日明确此前成果均为前期调研；2026年10月30日先授权实现阶段1单Python脚本命令行原型，随后明确确认实现阶段2员工Web问答。最新授权覆盖此前“不增加源码”“仅单脚本、不建立Web服务”的阶段限制。当前实现范围为FastAPI POST SSE、SQLite用户/会话/消息持久化、原生HTML/JavaScript聊天页，复用阶段1的本地制度Markdown、500字切片、FAISS、BM25与向量混合检索top3；不扩展为完整业务系统。
 
-阶段1入口stage1_rag.py继续保留；阶段2入口为chat_app.py，核心和持久层为chat_core.py、chat_store.py，页面位于static/，当前离线契约测试为tests/test_chat.py。允许为已授权范围维护必要依赖、测试和文档，不恢复归档中的旧框架、部署或自动工作流。模型、索引默认放在.gitignore排除的.stage1_rag/，SQLite与实例锁默认放在.chat_data/；临时校验使用仓库以外的授权目录。不提交数据库、依赖、缓存、截图或临时QA目录。Git内部元数据不在业务成果范围。
+阶段1入口src/dhls/core/rag.py继续保留；阶段2入口为src/dhls/main.py，核心和持久层为src/dhls/core/chat.py、src/dhls/core/store.py，页面位于static/，当前离线契约测试为tests/api/test_chat.py。允许为已授权范围维护必要依赖、测试和文档，不恢复归档中的旧框架、部署或自动工作流。模型、索引默认放在.gitignore排除的.stage1_rag/，SQLite与实例锁默认放在.chat_data/；临时校验使用仓库以外的授权目录。不提交数据库、依赖、缓存、截图或临时QA目录。Git内部元数据不在业务成果范围。
 
-2026年10月30日用户进一步确认管理后台页面/接口方案，按批次实施；当前第1批新增chat_auth.py、manage_users.py、templates/、static/auth.js与admin.css，真实本地账号、Argon2、JWT Cookie、CSRF和员工/管理员接口权限。用户最新授权覆盖旧“同一演示身份”的阶段限制；演示账号停用、历史保留，不再允许环境开关旁路登录。后续批次为文档上传/授权/索引管理、数据库提示词、对话审阅，本批只交付其SSR页面骨架。
+2026年10月30日用户进一步确认管理后台页面/接口方案，按批次实施；当前第1批新增src/dhls/core/auth.py、scripts/manage_users.py、templates/、static/auth.js与admin.css，真实本地账号、Argon2、JWT Cookie、CSRF和员工/管理员接口权限。用户最新授权覆盖旧“同一演示身份”的阶段限制；演示账号停用、历史保留，不再允许环境开关旁路登录。后续批次为文档上传/授权/索引管理、数据库提示词、对话审阅，本批只交付其SSR页面骨架。
 
-服务仍限定loopback、单worker和实例锁保护；目前各账号普通聊天按所有权隔离，部门/场馆为身份字段、尚无制度ACL或多范围授权。现有单份制度共用、提示词仍沿用原检索核心，不能声称完整管理功能、企业SSO、生产部署或生产验收完成。新增tests/test_auth.py与原tests/test_chat.py共同回归。生成模型通过后端配置调用，Embedding本地运行。
+服务仍限定loopback、单worker和实例锁保护；目前各账号普通聊天按所有权隔离，部门/场馆为身份字段、尚无制度ACL或多范围授权。现有单份制度共用、提示词仍沿用原检索核心，不能声称完整管理功能、企业SSO、生产部署或生产验收完成。新增tests/core/test_auth.py与原tests/api/test_chat.py共同回归。生成模型通过后端配置调用，Embedding本地运行。
 
-2026年10月30日用户进一步授权Agent执行循环、最多5轮决策日志，以及create_draft前必须流式预览并由员工确认。当前采用LangGraph实现Harness模式（并非DeepSeek官方DSH SDK），新增agent_loop.py、agent_business.py、agent_state.py、agent_routes.py、manage_agent.py、员工/agent页面和tests/test_agent.py。业务工具使用数据库中显式账号/部门/场馆授权，确定性校验凭据及事务内版本复核；业务授权不等于普通制度文档ACL已完成。只有CLI显式初始化且与虚构制度一致的试点规则可PASS；真实规则未配置时必须NEEDS_REVIEW，不自动批准。仅生成草稿，不提交审批、不占档。
+2026年10月30日用户进一步授权Agent执行循环、最多5轮决策日志，以及create_draft前必须流式预览并由员工确认。当前采用LangGraph实现Harness模式（并非DeepSeek官方DSH SDK），新增src/dhls/core/agent_loop.py、src/dhls/core/agent_business.py、src/dhls/core/agent_state.py、src/dhls/api/agent.py、scripts/manage_agent.py、员工/agent页面和tests/api/test_agent.py。业务工具使用数据库中显式账号/部门/场馆授权，确定性校验凭据及事务内版本复核；业务授权不等于普通制度文档ACL已完成。只有CLI显式初始化且与虚构制度一致的试点规则可PASS；真实规则未配置时必须NEEDS_REVIEW，不自动批准。仅生成草稿，不提交审批、不占档。
 
 每次真实模型请求先持久化扣减轮次，失败/重启不返还，最多5次；原生LangGraph SQLite断点负责人工中断/恢复，确认API不属于模型工具。运行状态、决策/工具/确认日志写在chat.sqlite3，断点位于同一运行目录agent-checkpoints.sqlite3，均不可提交。外部追踪禁用；本地断点和数据库含原业务数据，外发继续经过演示脱敏出口。后续修改须保持员工确认、预览哈希、幂等、所有权、权限与版本检查，不得用提示词替代服务端约束。
 
@@ -18,7 +18,11 @@
 
 ## 发布约定
 
-用户此前持续授权每轮有变更的成果提交并推送至https://github.com/kelleyxing-netizen/dhls.git的main分支；当前任务若明确不提交或由主协作者统一完成，则服从当前指令，子任务不自行提交推送。开始前检查git状态、分支和远程，保留未确认的用户改动；仅暂存本轮已核查文件。更新docs/CHANGELOG.md，并按实际变更验证文档链接、当前原型测试；涉及归档、报价或制品排版时再验证归档完整性、字体、公式及逐页视觉排版。当前已有可运行的阶段1/2原型，但没有生产部署或CI；不执行已归档的旧构建及测试入口。
+2026年10月31日用户进一步明确授权按标准Python项目结构整理仓库，并将前述30条评测用例与25项上线检查清单提交推送。当前源码统一在src/dhls/，main.py为应用入口，core/为业务，api/为Agent路由，utils/为实例锁，cli/为账号与演示CLI，static/与templates/随wheel打包；tests/api/和tests/core/对应回归。根目录CHANGELOG.md为唯一现行版本记录，docs/保留研究资料及分阶段说明。运行入口为python -m dhls，阶段1为python -m dhls.core.rag，脚本入口在scripts/；旧根目录.py文件已迁移，不新建同名兼容实现。
+
+默认运行数据相对Path.cwd()，从仓库根运行保持原数据路径；wheel从其他目录运行时显式指定CHAT_DATA_DIR和RAG_WORK_DIR。评测JSON在data/evaluation_cases.json，纯标准库结构验证器在scripts/validate_evaluation.py；结构合格不等于30题模型行为通过。上线清单在docs/prelaunch-checklist.md，均为待验证并须留证，不能写成已生产验收。config/default.toml只是非机密参考，程序仍读取环境变量；CI仅运行离线回归和构建，无生产部署。此次新增的src打包/CI/示例覆盖早期不恢复框架的限制，但不恢复归档旧代码。
+
+用户此前持续授权每轮有变更的成果提交并推送至https://github.com/kelleyxing-netizen/dhls.git的main分支；当前任务若明确不提交或由主协作者统一完成，则服从当前指令，子任务不自行提交推送。开始前检查git状态、分支和远程，保留未确认的用户改动；仅暂存本轮已核查文件。更新根目录CHANGELOG.md，并按实际变更验证文档链接、当前原型测试；涉及归档、报价或制品排版时再验证归档完整性、字体、公式及逐页视觉排版。当前已有可运行的阶段1/2原型，已有离线CI配置，但没有生产部署；不执行已归档的旧构建及测试入口。
 
 推送后核对本地HEAD与远程提交。禁止强推、改写远程历史、覆盖未确认的远程改动；远程领先或发生语义冲突时先检查再处理。失败应如实报告，不把未上传说成已同步。不安装后台任务、Git hook或保存访问令牌。
 

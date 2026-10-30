@@ -17,7 +17,7 @@ from typing import Any
 
 import pytest
 
-from stage1_rag import Chunk, SearchHit
+from dhls.core.rag import Chunk, SearchHit
 
 
 class FakeRetriever:
@@ -248,8 +248,8 @@ class Rig:
 
 @contextlib.asynccontextmanager
 async def rig(tmp_path: Path, *, model=None, retriever=None):
-    from chat_app import Settings, create_app, current_user
-    from stage1_rag import LLMConfig
+    from dhls.main import Settings, create_app, current_user
+    from dhls.core.rag import LLMConfig
 
     model = model or FakeModel()
     retriever = retriever or FakeRetriever()
@@ -489,7 +489,7 @@ def test_sources_are_not_published_when_persistence_fails(tmp_path, monkeypatch)
 
 def test_ownership_and_http_errors_use_chinese_envelopes(tmp_path):
     async def scenario():
-        from chat_app import current_user
+        from dhls.main import current_user
 
         async with rig(tmp_path) as test:
             session = await test.session()
@@ -544,8 +544,8 @@ def upstream_frame(content=None, *, finish=None, reasoning=None):
 def test_real_upstream_parser_handles_utf8_fragments_and_rejects_incomplete_streams(ending, error_code):
     async def scenario():
         import httpx
-        from chat_core import ChatError, stream_llm
-        from stage1_rag import LLMConfig
+        from dhls.core.chat import ChatError, stream_llm
+        from dhls.core.rag import LLMConfig
 
         wire = (": heartbeat\n\n" + upstream_frame(reasoning="不应转发的推理")
                 + upstream_frame("中文回答。[S1]") + ending).encode()

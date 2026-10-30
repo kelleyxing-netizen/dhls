@@ -10,7 +10,7 @@ from pathlib import Path
 
 import aiosqlite
 
-from chat_core import ChatError
+from dhls.core.chat import ChatError
 
 
 def now() -> str:

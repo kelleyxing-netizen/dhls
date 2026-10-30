@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dhls"
+version = "0.10.0"
+description = "场馆排期与需求变更：制度问答、工具编排与员工确认原型"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+build = ["build>=1.2,<2"]
+
+[project.scripts]
+dhls = "dhls.main:main"
+dhls-rag = "dhls.core.rag:cli"
+dhls-users = "dhls.cli.users:main"
+dhls-demo = "dhls.cli.demo:main"
+
+[project.urls]
+Repository = "https://github.com/kelleyxing-netizen/dhls"
+Issues = "https://github.com/kelleyxing-netizen/dhls/issues"
+
+[tool.setuptools]
+# 资源由下方白名单显式打包，不把静态目录误识别为隐式命名空间包。
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["dhls*"]
+namespaces = false
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.package-data]
+dhls = ["static/*.html", "static/*.css", "static/*.js", "templates/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -10,9 +10,9 @@ import json
 import time
 import uuid
 
-from chat_core import ChatError
-from chat_store import Store, now
-from stage1_rag import redact_for_llm
+from dhls.core.chat import ChatError
+from dhls.core.store import Store, now
+from dhls.core.rag import redact_for_llm
 
 MAX_ROUNDS = 5
 

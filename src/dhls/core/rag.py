@@ -3,15 +3,15 @@
 """场馆制度问答：阶段 1 单文件命令行 RAG 原型，要求 Python 3.11+。
 
 安装：python -m pip install numpy faiss-cpu fastembed rank-bm25 httpx
-启动：python stage1_rag.py
-单次问答：python stage1_rag.py --question "已批准的档期如何变更？"
-仅检索：python stage1_rag.py --retrieve-only --question "审批期间版本变化怎么办？"
+启动：python -m dhls.core.rag
+单次问答：python -m dhls.core.rag --question "已批准的档期如何变更？"
+仅检索：python -m dhls.core.rag --retrieve-only --question "审批期间版本变化怎么办？"
 切换服务：--provider compatible --base-url 服务商兼容API地址 --model 模型名称
 
 密钥仅从环境变量读取：DeepSeek 默认 DEEPSEEK_API_KEY，其他供应商默认
 LLM_API_KEY；也可以用 --api-key-env 指定变量名。请勿把密钥写进本文件。
 首次运行会下载中文 Embedding 模型；缓存完成后可以加 --offline 禁止模型下载。
-默认数据位于脚本旁的 .stage1_rag/；--work-dir 可以指定其他本地目录。
+默认数据位于当前工作目录的 .stage1_rag/；--work-dir 可以指定其他本地目录。
 
 【后续阶段复用核心】Chunk、LocalEmbedder、split_document、tokenize_chinese、
 load_or_build_index、hybrid_search、redact_for_llm、build_prompt、call_llm。
@@ -442,7 +442,7 @@ def validate_answer_sources(answer: str, hits: list[SearchHit]) -> None:
 def parse_args() -> argparse.Namespace:
     """【仅原型使用】命令行装配层；后续 FastAPI 接口可替换这一层。"""
     parser = argparse.ArgumentParser(description="场馆制度 CLI RAG：500字切片 / BM25+FAISS / top3 / 可配置LLM")
-    parser.add_argument("--work-dir", type=Path, default=Path(__file__).resolve().parent / ".stage1_rag")
+    parser.add_argument("--work-dir", type=Path, default=Path.cwd() / ".stage1_rag")
     parser.add_argument("--document", type=Path, help="UTF-8 制度 Markdown；省略则自动创建示例")
     parser.add_argument("--question", help="单次问题；省略则进入交互输入")
     parser.add_argument("--init-only", action="store_true", help="只创建/检查制度文件")
@@ -524,7 +524,8 @@ async def main(args: argparse.Namespace) -> int:
 
 
 # 【仅原型使用】集中处理可解释错误；不输出含请求头或凭据的完整堆栈。
-if __name__ == "__main__":
+def cli() -> int:
+    """同步CLI入口，供python -m、console script与examples复用。"""
     # Windows 重定向/管道可能默认使用其他编码；统一UTF-8，避免中文说明乱码。
     for stream in (sys.stdin, sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
@@ -536,13 +537,18 @@ if __name__ == "__main__":
         if arguments.init_only:
             document = ensure_example_document(arguments.work_dir.expanduser().resolve(), arguments.document)
             print(f"[制度] {document}")
-            raise SystemExit(0)
-        raise SystemExit(asyncio.run(main(arguments)))
+            return 0
+        return asyncio.run(main(arguments))
     except KeyboardInterrupt:
         print("\n已退出。")
+        return 0
     except ModuleNotFoundError as error:
         print(f"缺少依赖：{error.name}。请运行：{DEPENDENCY_COMMAND}", file=sys.stderr)
-        raise SystemExit(2)
+        return 2
     except (PrototypeError, OSError, ValueError, RuntimeError) as error:
         print(f"启动失败：{error}", file=sys.stderr)
-        raise SystemExit(1)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(cli())

@@ -19,8 +19,8 @@ import jwt
 from fastapi import Depends, Request
 from pwdlib import PasswordHash
 
-from chat_core import ChatError, Settings
-from chat_store import Store
+from dhls.core.chat import ChatError, Settings
+from dhls.core.store import Store
 
 COOKIE_NAME = "auth_token"
 JWT_ISSUER, JWT_AUDIENCE = "venue-chat", "venue-chat-web"

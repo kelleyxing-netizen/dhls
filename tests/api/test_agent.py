@@ -16,10 +16,10 @@ import uuid
 import httpx
 import pytest
 
-from chat_app import create_app
-from chat_auth import create_user
-from chat_core import Settings
-from stage1_rag import Chunk, LLMConfig, SearchHit
+from dhls.main import create_app
+from dhls.core.auth import create_user
+from dhls.core.chat import Settings
+from dhls.core.rag import Chunk, LLMConfig, SearchHit
 
 
 TEST_SECRET = "offline-agent-regression-signing-material-" + "q" * 40
@@ -127,7 +127,7 @@ class ScriptedDecision:
 @asynccontextmanager
 async def agent_rig(tmp_path: Path, *, model=None, seed=True):
     """真实身份和演示业务授权；没有给测试客户端提供任何绕过确认的API。"""
-    from agent_business import bootstrap_demo
+    from dhls.core.agent_business import bootstrap_demo
 
     model = model or ScriptedDecision()
     settings = Settings(data_dir=tmp_path / "data", rag_dir=tmp_path / "rag", jwt_secret=TEST_SECRET,

@@ -16,10 +16,10 @@ import httpx
 import jwt
 import pytest
 
-from chat_app import create_app
-from chat_auth import COOKIE_NAME, create_user
-from chat_core import Settings
-from stage1_rag import Chunk, LLMConfig, SearchHit
+from dhls.main import create_app
+from dhls.core.auth import COOKIE_NAME, create_user
+from dhls.core.chat import Settings
+from dhls.core.rag import Chunk, LLMConfig, SearchHit
 
 
 # 仅用于离线测试的独立签名材料；不是业务环境的JWT密钥或供应商API密钥。

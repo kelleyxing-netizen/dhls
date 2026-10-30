@@ -4,10 +4,14 @@
 
 | 成果 | 入口 | 定位 |
 | --- | --- | --- |
-| Agent执行循环 | [循环、确认及日志说明](Agent执行循环说明.md) · [执行核心](../agent_loop.py) · [工具与校验](../agent_business.py) | LangGraph Harness、最多5次决策、SQLite日志及持久化确认；仅显式虚构试点可生成草稿 |
-| 管理后台第1批 | [账号与权限说明](管理后台第1批说明.md) · [账号CLI](../manage_users.py) · [鉴权核心](../chat_auth.py) | 本地真实账号、JWT、角色/CSRF和SSR骨架；其余管理功能待接入 |
-| 阶段2员工聊天原型 | [启动说明](../README.md#阶段2本机员工聊天) · [接口及数据边界](员工问答接口说明.md) · [FastAPI入口](../chat_app.py) | 本机单进程、真实上游SSE、SQLite会话及来源校验；已接入本地账号，无生产业务执行能力 |
-| 阶段1命令行原型 | [运行说明](../README.md#阶段1单脚本制度问答) · [单Python脚本](../stage1_rag.py) | 本地制度、500字切片、FAISS、BM25+向量混合检索及可配置LLM；非Web业务系统 |
+| 当前设计及API | [design.md](design.md) · [api.md](api.md) · [安装运行](../README.md) | src/dhls包布局、四层分工、现行接口及旧命令迁移 |
+| 30条行为评测 | [JSON数据](../data/evaluation_cases.json) · [执行与评分](evaluation.md) | 10条制度（含3陷阱）、10条工具、5条违规、5条多轮；待执行，非通过报告 |
+| 上线前检查 | [25项清单](prelaunch-checklist.md) | 五维度各5项，负责人、验证方法、通过标准及证据栏；初始均未验证 |
+| 配置与贡献 | [非机密配置参考](../config/README.md) · [贡献指南](../CONTRIBUTING.md) | 环境变量映射、独立测试、打包及PR流程 |
+| Agent执行循环 | [循环、确认及日志说明](Agent执行循环说明.md) · [执行核心](../src/dhls/core/agent_loop.py) · [工具与校验](../src/dhls/core/agent_business.py) | LangGraph Harness、最多5次决策、SQLite日志及持久化确认；仅显式虚构试点可生成草稿 |
+| 管理后台第1批 | [账号与权限说明](管理后台第1批说明.md) · [账号CLI](../scripts/manage_users.py) · [鉴权核心](../src/dhls/core/auth.py) | 本地真实账号、JWT、角色/CSRF和SSR骨架；其余管理功能待接入 |
+| 阶段2员工聊天原型 | [启动说明](../README.md#安装与运行) · [接口及数据边界](员工问答接口说明.md) · [FastAPI入口](../src/dhls/main.py) | 本机单进程、真实上游SSE、SQLite会话及来源校验；已接入本地账号，无生产业务执行能力 |
+| 阶段1命令行原型 | [运行说明](../README.md#命令行示例) · [单Python脚本](../src/dhls/core/rag.py) | 本地制度、500字切片、FAISS、BM25+向量混合检索及可配置LLM；非Web业务系统 |
 | 原始需求调查 | [discovery-report.md](source/discovery-report.md) | 合成场景访谈，真实需求仍待核实 |
 | 行业及GitHub项目调研 | [Word](reports/展会排期与需求变更项目调研报告_20261023_优化版.docx) · [Markdown](reports/展会排期与需求变更项目调研报告_20261023_优化版.md) | 2026年10月23日的历史桌面研究 |
 | 访谈现状流程 | [PNG](assets/展会排期与需求变更_访谈流程图.png) · [说明及Mermaid](process/展会排期与需求变更_访谈流程图说明.md) | 标注潜在成本、耗时、人工与隐私位置 |
@@ -15,8 +19,8 @@
 | 软件研发实施报价 | [Excel](reports/场馆排期与需求变更AI数智化软件_研发实施报价单_20261024.xlsx) · [Word](reports/场馆排期与需求变更AI数智化软件_研发实施报价单_20261024.docx) | 当前软件建设及运行预算参考 |
 | 软件报价测算口径 | [说明](quotation/软件报价说明_20261024.md) · [参数](quotation/软件报价测算参数_20261024.json) | 可调整的范围、工作量、计费参数与来源 |
 | 历史辅助材料 | [归档说明](archive/README.md) | 旧工具和不适用的展会业务报价，不作为软件成品 |
-| 维护记录 | [更新记录](CHANGELOG.md) · [协作约定](AGENTS.md) | 文档归档、后续同步和事实边界 |
+| 维护记录 | [更新记录](../CHANGELOG.md) · [协作约定](AGENTS.md) | 文档归档、后续同步和事实边界 |
 
 历史报告和访谈中的企业背景、人物、单量、工时、四周试点及样本数字，应按原文声明解读，不能当作已确认需求、已开发能力、实测收益或生产验收结果。旧研究内容保留原日期，本轮未重新开展完整行业调研。
 
-阶段1单脚本继续可独立运行，阶段2复用其切片、Embedding、FAISS、BM25与RRF检索。当前测试入口为[阶段2离线测试](../tests/test_chat.py)，另见[阶段2接口说明](员工问答接口说明.md)的验证记录；未恢复归档中的旧框架、部署配置或自动工作流。过去生成研究成果的代码仍为历史辅助归档，不作为本原型入口。
+阶段1单脚本继续可独立运行，阶段2复用其切片、Embedding、FAISS、BM25与RRF检索。当前测试入口为[阶段2离线测试](../tests/api/test_chat.py)，另见[阶段2接口说明](员工问答接口说明.md)的验证记录；未恢复归档中的旧框架、部署配置或自动工作流。过去生成研究成果的代码仍为历史辅助归档，不作为本原型入口。

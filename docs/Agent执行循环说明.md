@@ -12,13 +12,13 @@ DeepSeek 官方 Harness Python SDK 会启动其 CLI 子进程，并由运行 pro
 
 | 文件 | 实际职责及后续复用位置 |
 | --- | --- |
-| [agent_loop.py](../agent_loop.py) | **可复用核心**：图编排、模型适配函数 `decide_llm`、工具结果回填、五轮上限、原生 `interrupt` / `Command` 恢复 |
-| [agent_state.py](../agent_state.py) | **可复用核心**：运行所有权、预算、日志、确认内容绑定、幂等和并发状态更新 |
-| [agent_business.py](../agent_business.py) | **可复用核心**：Function Calling 参数协议、业务授权、确定性校验、版本检查和草稿写事务；具体演示规则后续替换 |
-| [agent_routes.py](../agent_routes.py) | FastAPI / SSE 边界、JWT / CSRF、员工确认接口和结果重放 |
-| [manage_agent.py](../manage_agent.py) | 仅供本机显式初始化虚构业务样本 |
-| [templates/agent.html](../templates/agent.html)、[static/agent.js](../static/agent.js)、[static/agent.css](../static/agent.css) | 员工请求、逐轮记录、流式预览、确认 / 拒绝和刷新恢复 |
-| [tests/test_agent.py](../tests/test_agent.py) | 假模型驱动真实图、数据库与 HTTP 边界的自动化验证 |
+| [src/dhls/core/agent_loop.py](../src/dhls/core/agent_loop.py) | **可复用核心**：图编排、模型适配函数 `decide_llm`、工具结果回填、五轮上限、原生 `interrupt` / `Command` 恢复 |
+| [src/dhls/core/agent_state.py](../src/dhls/core/agent_state.py) | **可复用核心**：运行所有权、预算、日志、确认内容绑定、幂等和并发状态更新 |
+| [src/dhls/core/agent_business.py](../src/dhls/core/agent_business.py) | **可复用核心**：Function Calling 参数协议、业务授权、确定性校验、版本检查和草稿写事务；具体演示规则后续替换 |
+| [src/dhls/api/agent.py](../src/dhls/api/agent.py) | FastAPI / SSE 边界、JWT / CSRF、员工确认接口和结果重放 |
+| [scripts/manage_agent.py](../scripts/manage_agent.py) | 仅供本机显式初始化虚构业务样本 |
+| [templates/agent.html](../src/dhls/templates/agent.html)、[static/agent.js](../src/dhls/static/agent.js)、[static/agent.css](../src/dhls/static/agent.css) | 员工请求、逐轮记录、流式预览、确认 / 拒绝和刷新恢复 |
+| [tests/api/test_agent.py](../tests/api/test_agent.py) | 假模型驱动真实图、数据库与 HTTP 边界的自动化验证 |
 
 生成模型仍通过后端 API 调用；`decide_llm` 独立于业务工具，沿用 `LLM_PROVIDER`、`LLM_BASE_URL`、`LLM_MODEL` 与密钥环境变量配置。兼容供应商须支持 `chat/completions` 的 `tools`、`tool_calls` 和 `tool_call_id` 协议，不能仅支持纯文本聊天。协议依据见 [DeepSeek Chat Completions API](https://api-docs.deepseek.com/api/create-chat-completion/)。
 
@@ -173,16 +173,16 @@ ORDER BY failures DESC;
 需要 Python 3.11+。先停止使用相同 `CHAT_DATA_DIR` 的服务，再安装依赖、创建真实本地账号并显式初始化演示业务。以下用户名和部门 / 场馆是示例，没有内置密码：
 
 ```powershell
-python -m pip install -r requirements.txt
-python manage_users.py create-user --username venue.employee --display-name '员工' --role employee --department sales --venue east
-python manage_agent.py init-demo --username venue.employee
+python -m pip install -e .
+python scripts/manage_users.py create-user --username venue.employee --display-name '员工' --role employee --department sales --venue east
+python scripts/manage_agent.py init-demo --username venue.employee
 ```
 
 若账号已存在，跳过 `create-user`。`init-demo` 不创建账号、不调用模型、不保存密钥；输出资源编号、原排期编号和规则版本。它为该已有账号的当前场馆 / 部门建立显式业务授权，重跑不覆盖已有业务状态、不恢复撤销的授权；遇到同编号非演示场馆会拒绝。更换 `CHAT_DATA_DIR` 后，上述命令与服务必须使用同一个目录。
 
 ```powershell
 $env:DEEPSEEK_API_KEY = [System.Net.NetworkCredential]::new('', (Read-Host '请输入API密钥' -AsSecureString)).Password
-python chat_app.py
+python -m dhls
 ```
 
 登录后打开 [员工 Agent 页面](http://127.0.0.1:8000/agent)。默认未指定制度文件时沿用阶段1虚构制度；初次需要下载本地 Embedding 并建索引，也可复用已有缓存。现有模型、目录和网络超时变量见 [启动说明](../README.md)。页面仍可返回普通制度聊天。

@@ -18,9 +18,9 @@ from langgraph.types import Command, interrupt
 from langsmith import tracing_context
 from pydantic import ValidationError
 
-from agent_state import AgentStateStore, MAX_ROUNDS, dumps
-from chat_core import ChatError
-from stage1_rag import redact_for_llm
+from dhls.core.agent_state import AgentStateStore, MAX_ROUNDS, dumps
+from dhls.core.chat import ChatError
+from dhls.core.rag import redact_for_llm
 
 AGENT_PROMPT = """你是场馆排期与需求变更助手，可自主查询、补问、比较方案与准备草稿。
 每轮只调用一个工具，最多五轮模型决策。先search_policy取得制度与资源编号；

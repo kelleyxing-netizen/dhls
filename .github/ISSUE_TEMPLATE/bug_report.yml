@@ -1,0 +1,23 @@
+name: 缺陷反馈
+description: 提交可复现的错误，请仅使用脱敏或虚构数据。
+title: '[Bug] '
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境与版本
+      description: 提供系统、Python和项目提交版本，不包含密钥或完整环境变量。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤与预期行为
+      description: 使用虚构账号、场馆和样例，说明实际结果及期望结果。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏证据
+      description: 可附错误码、请求编号与脱敏截图；不要上传数据库、JWT、合同或报销原件。
