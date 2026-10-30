@@ -14,7 +14,7 @@ import os
 import sqlite3
 import time
 import uuid
-from contextlib import asynccontextmanager, suppress
+from contextlib import AsyncExitStack, asynccontextmanager, suppress
 from pathlib import Path
 from typing import Any
 
@@ -230,7 +230,7 @@ class ChatInput(BaseModel):
         return value
 
 
-def create_app(settings: Settings | None = None, retriever=None, llm_stream=None) -> FastAPI:
+def create_app(settings: Settings | None = None, retriever=None, llm_stream=None, agent_decide=None) -> FastAPI:
     """依赖可注入，用同一真实API流程做无网络确定性测试，而非另写一套演示后端。"""
     settings = settings or Settings.from_env()
     settings.validate()
@@ -254,11 +254,23 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
                     logger.error("制度索引初始化失败 type=%s", type(error).__name__)
             async with httpx.AsyncClient(follow_redirects=False) as client:
                 app.state.llm_client = client
-                yield
+                # 【可复用核心：Agent生命周期】业务表与断点均本地持久化，不启动CLI子进程。
+                from agent_business import AgentBusiness
+                from agent_loop import AgentHarness
+                from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+                from agent_state import AgentStateStore
+                async with AsyncExitStack() as stack:
+                    checkpoint = await stack.enter_async_context(AsyncSqliteSaver.from_conn_string(str(settings.data_dir / "agent-checkpoints.sqlite3")))
+                    await checkpoint.setup()
+                    await AgentStateStore(store).initialize()
+                    business = AgentBusiness(store, app.state.retriever, app.state.document_version, app.state.knowledge_is_demo)
+                    await business.initialize()
+                    app.state.agent = AgentHarness(store, business, settings, client, checkpoint, agent_decide)
+                    yield
         finally:
             instance_lock.release()
 
-    app = FastAPI(title="场馆制度问答与管理后台", version="0.8.0", lifespan=lifespan,
+    app = FastAPI(title="场馆制度问答与管理后台", version="0.9.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None)
     app.state.settings, app.state.store = settings, store
     app.state.retriever, app.state.document_version = retriever, ""
@@ -270,7 +282,7 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
     async def chat_error(request, error):
         # 页面导航跳转登录；API始终保留HTTP错误码与统一中文JSON信封。
         if error.status == 401 and request.method == "GET" and (
-            request.url.path == "/" or request.url.path in {"/admin", "/admin/knowledge", "/admin/prompts", "/admin/conversations"}
+            request.url.path in {"/", "/agent", "/admin", "/admin/knowledge", "/admin/prompts", "/admin/conversations"}
         ):
             return RedirectResponse("/login", status_code=303)
         return JSONResponse(envelope(error.code, error.message, {"retryable": error.retryable},
@@ -473,6 +485,8 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
         return ManagedStreamingResponse(heartbeat_stream(generate(), settings.heartbeat_seconds), cleanup)
 
     # 静态资源同源提供，不引入CDN或跨域模型密钥；404仍由中文错误处理器接管。
+    from agent_routes import install_agent_routes
+    install_agent_routes(app, templates, ManagedStreamingResponse, heartbeat_stream, sse)
     app.mount("/static", StaticFiles(directory=STATIC_DIR, check_dir=False), name="static")
     return app
 

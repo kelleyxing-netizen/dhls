@@ -10,6 +10,10 @@
 
 服务仍限定loopback、单worker和实例锁保护；目前各账号普通聊天按所有权隔离，部门/场馆为身份字段、尚无制度ACL或多范围授权。现有单份制度共用、提示词仍沿用原检索核心，不能声称完整管理功能、企业SSO、生产部署或生产验收完成。新增tests/test_auth.py与原tests/test_chat.py共同回归。生成模型通过后端配置调用，Embedding本地运行。
 
+2026年10月30日用户进一步授权Agent执行循环、最多5轮决策日志，以及create_draft前必须流式预览并由员工确认。当前采用LangGraph实现Harness模式（并非DeepSeek官方DSH SDK），新增agent_loop.py、agent_business.py、agent_state.py、agent_routes.py、manage_agent.py、员工/agent页面和tests/test_agent.py。业务工具使用数据库中显式账号/部门/场馆授权，确定性校验凭据及事务内版本复核；业务授权不等于普通制度文档ACL已完成。只有CLI显式初始化且与虚构制度一致的试点规则可PASS；真实规则未配置时必须NEEDS_REVIEW，不自动批准。仅生成草稿，不提交审批、不占档。
+
+每次真实模型请求先持久化扣减轮次，失败/重启不返还，最多5次；原生LangGraph SQLite断点负责人工中断/恢复，确认API不属于模型工具。运行状态、决策/工具/确认日志写在chat.sqlite3，断点位于同一运行目录agent-checkpoints.sqlite3，均不可提交。外部追踪禁用；本地断点和数据库含原业务数据，外发继续经过演示脱敏出口。后续修改须保持员工确认、预览哈希、幂等、所有权、权限与版本检查，不得用提示词替代服务端约束。
+
 文档成果仍保存在docs/：reports/为报告及报价定稿，assets/为定稿图片，process/为流程说明，source/为原始调查，quotation/为软件报价参数和测算说明，archive/为历史不适用稿及调研辅助工具归档。归档中的代码和旧说明不是当前实现，不得按其中历史路径直接执行或恢复项目框架。
 
 ## 发布约定

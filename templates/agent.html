@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#183247">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <meta name="current-user-id" content="{{ user.id }}">
+  <title>排期与变更助手 · 场馆运营</title>
+  <link rel="stylesheet" href="/static/agent.css">
+  <script src="/static/agent.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#agent-question">跳到需求输入</a>
+  <!-- 可复用：身份由服务端渲染，Cookie 始终为 HttpOnly，页面不持有 JWT 正文。 -->
+  <header class="app-header">
+    <a class="brand" href="/agent"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 12 16 6l11 6M7 14v12m9-12v12m9-12v12M4 27h24"/></svg><span>场馆运营<small>排期与变更助手</small></span></a>
+    <nav class="workspace-nav" aria-label="工作空间"><a href="/">制度问答</a><a href="/agent" aria-current="page">排期与变更</a>{% if user.role == 'admin' %}<a href="/admin">管理后台</a>{% endif %}</nav>
+    <div class="account"><span>{{ user.display_name }}</span><button id="agent-logout" class="text-button" type="button">退出</button></div>
+  </header>
+  <main id="agent-main" class="agent-main">
+    <div class="page-heading"><div><p>场馆排期与需求变更</p><h1>提出需求，逐步核对。</h1><p class="page-description">助手查询制度和资源，完成校验后，将草稿交给你确认。</p></div><div class="flow-boundary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM9 8h6m-6 4h6m-6 4h3"/></svg><span>确认后创建草稿<small>草稿不代表审批通过或占档成功</small></span></div></div>
+    <div id="agent-notice" class="notice" role="alert" hidden><span id="agent-notice-text"></span><button id="agent-notice-action" type="button" hidden>核对任务状态</button></div>
+    <div class="workspace-grid">
+      <div class="request-column">
+        <section class="request-panel" aria-labelledby="request-heading">
+          <div class="panel-heading"><h2 id="request-heading">你的需求</h2><button id="agent-new" class="text-button" type="button" disabled>开始新任务</button></div>
+          <form id="agent-form">
+            <label for="agent-question">描述要查询的制度、申请的排期或需要调整的内容</label>
+            <textarea id="agent-question" name="question" rows="5" maxlength="2000" required disabled placeholder="例如：准备一份场馆使用申请，说明场馆、资源、开始和结束时间、人数及用途。"></textarea>
+            <div class="form-footer"><span id="agent-input-hint">正在确认登录状态…</span><button id="agent-submit" class="primary-button" type="submit" disabled>开始处理<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button></div>
+          </form>
+        </section>
+        <section class="execution-panel" aria-labelledby="execution-heading">
+          <div class="panel-heading"><h2 id="execution-heading">处理过程</h2><span id="agent-rounds" class="round-count">0 / 5 轮</span></div>
+          <div class="execution-status"><span id="agent-status-dot" class="status-dot"></span><p id="agent-status">等待你的需求</p><button id="agent-refresh" class="text-button" type="button" hidden>刷新状态</button></div>
+          <p id="agent-log-empty" class="empty-log">制度查询、资源核对和校验结果会显示在这里。</p>
+          <ol id="agent-logs" class="execution-log" aria-label="工具执行记录"></ol>
+          <p id="agent-run-label" class="run-label" hidden></p>
+        </section>
+        <section id="agent-answer-panel" class="answer-panel" aria-labelledby="answer-heading" hidden><div class="panel-heading"><h2 id="answer-heading">助手回复</h2></div><div id="agent-answer" class="answer-text"></div></section>
+      </div>
+      <!-- 预览不是已创建申请单。按钮仅在完整、已持久化的确认事件到达后可操作。 -->
+      <section id="agent-preview-panel" class="preview-panel" aria-labelledby="preview-heading">
+        <div class="panel-heading"><h2 id="preview-heading">草稿预览</h2><span id="agent-preview-badge" class="preview-badge">等待校验</span></div>
+        <div id="agent-preview-empty" class="preview-empty"><svg viewBox="0 0 56 64" aria-hidden="true"><path d="M12 6h23l9 9v43H12zM34 6v11h10M20 28h16M20 37h16M20 46h10"/></svg><h3>先核对，再创建</h3><p>草稿将在校验通过后显示。请核对场馆、时间、资源和用途，再决定是否创建。</p></div>
+        <div id="agent-preview-content" hidden>
+          <p id="agent-preview-note" class="preview-note">正在接收草稿内容…</p>
+          <pre id="agent-preview-stream" class="preview-stream" aria-label="正在接收的草稿内容"></pre>
+          <dl id="agent-preview-fields" class="preview-fields" hidden></dl>
+          <details id="agent-preview-details" class="preview-details" hidden><summary>查看完整草稿内容</summary><pre id="agent-preview-json"></pre></details>
+          <p id="agent-expiry" class="expiry" hidden></p>
+          <div id="agent-confirm-actions" class="confirmation-actions"><button id="agent-reject" class="secondary-button" type="button" disabled>暂不创建</button><button id="agent-approve" class="primary-button" type="button" disabled>确认创建草稿</button></div>
+        </div>
+        <div id="agent-draft-result" class="draft-result" hidden><span class="result-icon" aria-hidden="true">✓</span><h3>草稿已创建</h3><p id="agent-draft-label"></p><p>后续仍需按业务流程提交审批和办理占档。</p></div>
+      </section>
+    </div>
+  </main>
+  <div id="agent-live-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
