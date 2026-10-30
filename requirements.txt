@@ -1,0 +1,9 @@
+# Python 3.11+；同时保留阶段1 CLI依赖。
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+aiosqlite>=0.20,<1
+httpx>=0.27,<1
+numpy>=1.26,<3
+faiss-cpu>=1.9,<2
+fastembed>=0.6,<1
+rank-bm25>=0.2.2,<1

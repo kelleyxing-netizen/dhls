@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#183247">
+  <title>场馆制度助手</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#question">跳到提问</a>
+  <div class="app-shell">
+    <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+    <aside id="sidebar" class="sidebar" aria-label="会话导航">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M5 12 16 6l11 6M7 14v12m9-12v12m9-12v12M4 27h24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div><strong>场馆运营</strong><span>制度助手</span></div>
+        <button id="close-sidebar" class="icon-button mobile-only" type="button" aria-label="关闭会话栏"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+      </div>
+      <button id="new-session" class="new-session" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>新建会话</span></button>
+      <div class="session-heading"><h2>最近会话</h2><button id="refresh-sessions" class="icon-button" type="button" aria-label="刷新会话列表"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/></svg></button></div>
+      <p id="session-list-note" class="session-list-note">正在加载会话…</p>
+      <nav class="session-navigation" aria-label="最近会话"><ul id="session-list" class="session-list"></ul></nav>
+      <p id="session-lock-note" class="session-lock-note" hidden>回答生成中，停止后可切换会话。</p>
+      <div class="sidebar-footer"><span class="footer-rule" aria-hidden="true"></span><p>让每一步运营<br>都有制度可循</p><span>查制度 · 看依据 · 再执行</span></div>
+    </aside>
+
+    <main id="main" class="workspace">
+      <header class="workspace-header">
+        <button id="open-sidebar" class="icon-button mobile-only" type="button" aria-label="打开会话栏" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <div class="workspace-title"><h1>制度问答</h1><span id="current-session-title">新会话</span></div>
+        <div class="header-actions"><button id="knowledge-status" class="knowledge-status" type="button" title="重新检查制度资料与模型"><span aria-hidden="true"></span><span id="knowledge-status-text">正在连接</span></button><button id="reload-history" class="icon-button" type="button" aria-label="重新加载当前会话" title="重新加载当前会话" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/></svg></button></div>
+      </header>
+      <div id="demo-banner" class="demo-banner" hidden><strong>演示模式</strong><span>当前使用演示身份与虚构制度，仅用于原型验证。</span></div>
+      <div id="notice" class="notice" role="alert" hidden><span id="notice-text"></span><button id="notice-action" type="button" hidden>重试</button><button id="dismiss-notice" class="notice-dismiss" type="button" aria-label="关闭提示">×</button></div>
+
+      <section id="chat-scroll" class="chat-scroll" aria-label="问答内容" tabindex="0">
+        <div id="welcome" class="welcome">
+          <div class="welcome-emblem" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M9 8h17a5 5 0 0 1 5 5v20H13a4 4 0 0 1-4-4V8Zm0 20a4 4 0 0 1 4-4h18M16 14h8M16 18h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <p class="welcome-context">场馆运营制度查询</p>
+          <h2>把制度查清楚，<br>让工作有据可依。</h2>
+          <p class="welcome-description">用日常语言描述你的问题，<br class="small-only">获取制度中的处理要求与引用依据。</p>
+          <div class="suggestions" aria-label="试试这样提问">
+            <button type="button" data-question="已批准的档期如何变更？"><span>档期变更</span><strong>已批准的档期如何变更？</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
+            <button type="button" data-question="审批期间资料版本变化怎么办？"><span>审批资料</span><strong>审批期间资料版本变化怎么办？</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
+            <button type="button" data-question="申请缺少必要字段时如何处理？"><span>申请校验</span><strong>申请缺少必要字段时如何处理？</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
+          </div>
+        </div>
+        <div id="history-loading" class="history-loading" role="status" hidden>正在恢复会话…</div>
+        <div id="conversation" class="conversation" hidden>
+          <button id="load-earlier" class="load-earlier" type="button" hidden>查看更早的消息</button>
+          <div id="messages"></div>
+        </div>
+      </section>
+      <button id="jump-latest" class="jump-latest" type="button" hidden>回到最新回答 <span aria-hidden="true">↓</span></button>
+
+      <div class="composer-area">
+        <form id="chat-form" class="composer">
+          <label class="sr-only" for="question">输入制度问题</label>
+          <textarea id="question" name="question" rows="2" maxlength="2000" placeholder="描述你遇到的问题，例如：已批准的档期如何变更？" enterkeyhint="send" disabled></textarea>
+          <div class="composer-toolbar"><span id="composer-hint">正在连接制度资料…</span><div class="composer-actions"><span id="character-count" class="character-count" hidden>0 / 2000</span><button id="stop-generation" class="stop-button" type="button" hidden><span aria-hidden="true"></span>停止生成</button><button id="send-question" class="send-button" type="submit" disabled><span>发送</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button></div></div>
+        </form>
+        <p class="composer-footnote">回答依据制度资料生成，请结合实际情况核对引用内容。</p>
+      </div>
+    </main>
+  </div>
+  <div id="live-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
