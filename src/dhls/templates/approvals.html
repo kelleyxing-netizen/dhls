@@ -1,14 +1,26 @@
 {% extends "admin.html" %}
 {% block head_assets %}
 <link rel="stylesheet" href="/static/approvals.css">
+<link rel="stylesheet" href="/static/visuals.css">
+<script src="/static/visuals.js" defer></script>
 <script src="/static/approvals.js" defer></script>
 {% endblock %}
 {% block admin_content %}
 <div id="review-workspace" class="review-workspace" data-mode="admin">
-  <div class="review-page-heading"><div><h1>排期审批</h1><p>查看员工提交的申请，核对变更与资源情况，再记录审核决定。</p></div><a class="secondary-button" href="/drafts">我的草稿</a></div>
+  <div class="review-page-heading"><div><h1>排期审批</h1><p>查看员工提交的申请，核对变更与资源情况，再记录审核决定。</p></div><div class="review-page-actions"><a class="secondary-button" href="/drafts">我的草稿</a><button class="viz-motion-button" data-motion-toggle type="button">关闭动效</button></div></div>
   <p class="review-boundary">本次通过审批只保存审核结果，不自动占档，也不切换原排期。</p>
   <div id="auth-notice" class="auth-notice" role="alert" hidden></div>
   <div id="review-notice" class="review-notice" role="alert" hidden><p id="review-notice-text"></p><button id="review-notice-refresh" class="text-button" type="button" hidden>刷新当前内容</button></div>
+  <section id="review-analytics" class="review-analytics" aria-labelledby="review-analytics-title" aria-busy="true">
+    <div class="review-analytics-heading"><h2 id="review-analytics-title">审批概览</h2><div class="review-analytics-controls"><label for="review-trend-days">趋势范围</label><select id="review-trend-days" aria-label="审批趋势范围"><option value="7">最近7天</option><option value="30">最近30天</option></select><button id="review-analytics-toggle" class="viz-disclosure-button" type="button" aria-expanded="true" aria-controls="review-analytics-body">收起图表</button></div></div>
+    <p id="review-analytics-compact" class="viz-compact-summary" hidden>正在汇总授权申请…</p>
+    <div id="review-analytics-body">
+    <p id="review-analytics-scope" class="review-analytics-scope">正在核对可审核场馆…</p>
+    <p id="review-analytics-error" class="review-analytics-error" role="status" hidden></p>
+    <div class="review-analytics-content"><div class="review-analytics-statuses"><h3>已提交申请的当前状态</h3><div id="review-distribution"><p class="review-analytics-loading">正在汇总申请状态…</p></div></div><div><h3>提交与处理趋势</h3><div id="review-trend"><p class="review-analytics-loading">正在读取实际审批记录…</p></div></div></div>
+    <p id="review-analytics-footnote" class="review-analytics-footnote">状态按申请份数统计；趋势按提交、通过或退回的操作次数统计，包含重复提交。时间均为北京时间。</p>
+    </div>
+  </section>
   <div class="review-toolbar"><div class="review-filter"><label for="review-filter">申请状态</label><select id="review-filter"><option value="submitted">待审核</option><option value="approved">已通过</option><option value="returned">已退回</option><option value="all">全部已提交申请</option></select></div><p id="review-scope" class="review-scope">正在确认审核范围…</p><button id="review-refresh" class="secondary-button" type="button">刷新列表</button></div>
   <div class="review-grid">
     <section class="review-list-panel" aria-labelledby="review-list-title"><div class="review-section-heading"><h2 id="review-list-title">申请列表</h2><span id="review-count">最近50份</span></div><div id="review-list" class="review-list" aria-live="polite"><p class="review-loading">正在读取已提交申请…</p></div></section>
@@ -17,9 +29,9 @@
       <div id="review-detail" hidden>
         <div class="review-detail-heading"><div><h2 id="review-detail-heading">申请详情</h2><p id="review-draft-id" class="review-reference"></p></div><span id="review-detail-status" class="review-status"></span></div>
         <p id="review-outcome" class="review-outcome" hidden></p>
-        <section class="review-section" aria-labelledby="review-candidate-heading"><h3 id="review-candidate-heading">申请内容</h3><dl id="review-fields" class="review-fields"></dl></section>
+        <section class="review-section" aria-labelledby="review-candidate-heading"><h3 id="review-candidate-heading">申请内容</h3><div id="review-schedule-viz" class="review-schedule-viz"></div><dl id="review-fields" class="review-fields"></dl></section>
         <section id="review-changes-section" class="review-section" aria-labelledby="review-changes-heading" hidden><h3 id="review-changes-heading">原排期与变更差异</h3><p id="review-baseline-note" class="review-help"></p><div class="review-table-wrap"><table class="review-diff-table"><thead><tr><th scope="col">字段</th><th scope="col">原排期基线</th><th scope="col">申请方案</th></tr></thead><tbody id="review-changes"></tbody></table></div></section>
-        <section class="review-section" aria-labelledby="review-assessment-heading"><div class="review-section-heading"><h3 id="review-assessment-heading">当前复核</h3><span id="review-assessment-status" class="review-status"></span></div><p id="review-assessment-summary" class="review-help"></p><ul id="review-issues" class="review-issues" hidden></ul><div id="review-conflicts" class="review-conflicts" hidden></div></section>
+        <section class="review-section" aria-labelledby="review-assessment-heading"><div class="review-section-heading"><h3 id="review-assessment-heading">当前复核</h3><span id="review-assessment-status" class="review-status"></span></div><p id="review-assessment-summary" class="review-help"></p><div id="review-assessment-viz"></div><ul id="review-issues" class="review-issues" hidden></ul><div id="review-conflicts" class="review-conflicts" hidden></div></section>
         <section id="review-decision-section" class="review-section review-decision-section" aria-labelledby="review-decision-heading" hidden>
           <h3 id="review-decision-heading">审核决定</h3><p id="review-decision-help" class="review-help"></p>
           <label class="review-label" for="review-comment">审核意见 <span>退回时必填</span></label><textarea id="review-comment" class="review-comment" rows="3" maxlength="2000" placeholder="说明通过依据，或写清需要员工调整的内容。"></textarea>

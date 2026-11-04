@@ -9,6 +9,8 @@
   <meta name="current-user-id" content="{{ user.id }}">
   <title>排期与变更助手 · 场馆运营</title>
   <link rel="stylesheet" href="/static/agent.css">
+  <link rel="stylesheet" href="/static/visuals.css">
+  <script src="/static/visuals.js" defer></script>
   <script src="/static/agent.js" defer></script>
 </head>
 <body>
@@ -22,6 +24,15 @@
   <main id="agent-main" class="agent-main">
     <div class="page-heading"><div><p>场馆排期与需求变更</p><h1>提出需求，逐步核对。</h1><p class="page-description">助手查询制度和资源，完成校验后，将草稿交给你确认。</p></div><div class="flow-boundary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM9 8h6m-6 4h6m-6 4h3"/></svg><span>确认后创建草稿<small>草稿不代表审批通过或占档成功</small></span></div></div>
     <div id="agent-notice" class="notice" role="alert" hidden><span id="agent-notice-text"></span><button id="agent-notice-action" type="button" hidden>核对任务状态</button></div>
+    <section id="agent-process-panel" class="process-panel" aria-labelledby="agent-process-title">
+      <div class="process-panel-heading"><h2 id="agent-process-title">从需求到草稿</h2><div class="process-controls"><button id="agent-process-toggle" type="button" class="viz-disclosure-button" aria-expanded="true" aria-controls="agent-process">收起步骤</button><button type="button" class="viz-motion-button" data-motion-toggle>关闭动效</button></div></div>
+      <ol id="agent-process" class="process-steps" aria-label="本次任务的实际处理步骤">
+        {% for key, label in [('policy','检索制度'),('resources','查询资源'),('validate','校验申请'),('preview','草稿预览'),('confirm','员工确认')] %}
+        <li class="process-step" data-step="{{ key }}" data-state="idle"><span class="process-mark" aria-hidden="true"><span>{{ loop.index }}</span><svg viewBox="0 0 20 20"><path d="m4 10 4 4 8-8"/></svg></span><strong>{{ label }}</strong><small>尚未执行</small></li>
+        {% endfor %}
+      </ol>
+      <p id="agent-process-note" class="process-note">根据本次任务的实际查询、校验和确认记录更新；未执行的步骤保持未完成。</p>
+    </section>
     <div class="workspace-grid">
       <div class="request-column">
         <section class="request-panel" aria-labelledby="request-heading">

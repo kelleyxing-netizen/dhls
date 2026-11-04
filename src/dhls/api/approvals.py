@@ -64,6 +64,10 @@ def install_approval_routes(app, templates, envelope):
                         limit: int = Query(default=50, ge=1, le=100), user=Depends(require_admin)):
         return envelope(data=await app.state.approvals.list_drafts(user, status=status, limit=limit, reviewer=True), request_id=request.state.request_id)
 
+    @app.get("/admin/api/approvals/summary")
+    async def approval_summary(request: Request, days: int = Query(default=7, ge=7, le=30), user=Depends(require_admin)):
+        return envelope(data=await app.state.approvals.overview(user, days), request_id=request.state.request_id)
+
     @app.get("/admin/api/approvals/{draft_id}")
     async def approval_detail(draft_id: uuid.UUID, request: Request, user=Depends(require_admin)):
         return envelope(data=await app.state.approvals.detail(user, str(draft_id), reviewer=True), request_id=request.state.request_id)

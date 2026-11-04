@@ -5,6 +5,7 @@
   <meta name="csrf-token" content="{{ csrf_token }}"><meta name="current-user-id" content="{{ user.id }}">
   <title>我的草稿 · 场馆运营</title>
   <link rel="stylesheet" href="/static/agent.css"><link rel="stylesheet" href="/static/approvals.css">
+  <link rel="stylesheet" href="/static/visuals.css"><script src="/static/visuals.js" defer></script>
   <script src="/static/auth.js" defer></script><script src="/static/approvals.js" defer></script><script src="/static/drafts.js" defer></script>
 </head>
 <body>
@@ -24,9 +25,9 @@
           <div id="review-detail" hidden>
             <div class="review-detail-heading"><div><h2 id="review-detail-heading">草稿详情</h2><p id="review-draft-id" class="review-reference"></p></div><span id="review-detail-status" class="review-status"></span></div>
             <p id="review-outcome" class="review-outcome" hidden></p>
-            <section class="review-section" aria-labelledby="review-candidate-heading"><h3 id="review-candidate-heading">申请内容</h3><dl id="review-fields" class="review-fields"></dl></section>
+            <section class="review-section" aria-labelledby="review-candidate-heading"><h3 id="review-candidate-heading">申请内容</h3><div id="review-schedule-viz" class="review-schedule-viz"></div><dl id="review-fields" class="review-fields"></dl></section>
             <section id="review-changes-section" class="review-section" aria-labelledby="review-changes-heading" hidden><h3 id="review-changes-heading">原排期与变更差异</h3><p id="review-baseline-note" class="review-help"></p><div class="review-table-wrap"><table class="review-diff-table"><thead><tr><th scope="col">字段</th><th scope="col">原排期基线</th><th scope="col">申请方案</th></tr></thead><tbody id="review-changes"></tbody></table></div></section>
-            <section class="review-section" aria-labelledby="review-assessment-heading"><div class="review-section-heading"><h3 id="review-assessment-heading">当前复核</h3><span id="review-assessment-status" class="review-status"></span></div><p id="review-assessment-summary" class="review-help"></p><ul id="review-issues" class="review-issues" hidden></ul><div id="review-conflicts" class="review-conflicts" hidden></div></section>
+            <section class="review-section" aria-labelledby="review-assessment-heading"><div class="review-section-heading"><h3 id="review-assessment-heading">当前复核</h3><span id="review-assessment-status" class="review-status"></span></div><p id="review-assessment-summary" class="review-help"></p><div id="review-assessment-viz"></div><ul id="review-issues" class="review-issues" hidden></ul><div id="review-conflicts" class="review-conflicts" hidden></div></section>
             <section id="review-submit-section" class="review-section" aria-labelledby="review-submit-heading" hidden><h3 id="review-submit-heading">提交审核</h3><p id="review-submit-help" class="review-help"></p><div class="review-action-row"><a class="secondary-button" href="/agent">准备修正草稿</a><button id="review-submit" class="primary-button" type="button" disabled>提交审核</button></div></section>
             <section class="review-section" aria-labelledby="review-events-heading"><h3 id="review-events-heading">审批记录</h3><ol id="review-events" class="review-events"></ol></section>
             <section id="review-confirmation" class="review-confirmation" aria-labelledby="review-confirmation-title" hidden><h3 id="review-confirmation-title"></h3><p id="review-confirmation-copy"></p><div class="review-action-row"><button id="review-cancel" class="secondary-button" type="button">取消</button><button id="review-confirm" class="primary-button" type="button"></button></div></section>

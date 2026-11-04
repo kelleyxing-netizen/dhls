@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import secrets
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from pydantic import ValidationError
 
@@ -247,6 +247,43 @@ class ApprovalService:
                                    "can_approve": reviewer and is_pending and not_self and assessment["status"] == "PASS",
                                    "can_return": reviewer and is_pending and not_self})
             return result
+
+    async def overview(self, user, days=7):
+        """同一只读快照内汇总全部授权申请；状态按份数，趋势按事件次数。"""
+        if days not in {7, 30}:
+            raise ChatError("INVALID_REQUEST", "趋势范围仅支持最近7天或30天。", 422)
+        stamp = now()
+        today = datetime.fromisoformat(stamp).astimezone(timezone(timedelta(hours=8))).date()
+        first = today - timedelta(days=days - 1)
+        counts = {status: 0 for status in ("submitted", "approved", "returned")}
+        daily = {(first + timedelta(days=i)).isoformat(): {"submitted": 0, "processed": 0}
+                 for i in range(days)}
+        async with self.store.connect() as db:
+            await db.execute("BEGIN")
+            venues = await self._reviewer_venues(db, user)
+            if venues:
+                placeholders = ",".join("?" for _ in venues)
+                scope = f"d.approval_venue_id IN ({placeholders}) AND d.status IN ('submitted','approved','returned')"
+                args = [venue["id"] for venue in venues]
+                rows = await (await db.execute(f"""SELECT d.status,COUNT(*) AS total
+                    FROM agent_business_drafts d WHERE {scope} GROUP BY d.status""", args)).fetchall()
+                for row in rows:
+                    counts[row["status"]] = row["total"]
+                rows = await (await db.execute(f"""SELECT date(e.created_at,'+8 hours') AS day,
+                    SUM(CASE WHEN e.action='submit' THEN 1 ELSE 0 END) AS submitted,
+                    SUM(CASE WHEN e.action IN ('approve','return') THEN 1 ELSE 0 END) AS processed
+                    FROM agent_approval_events e JOIN agent_business_drafts d ON d.id=e.draft_id
+                    WHERE {scope} AND date(e.created_at,'+8 hours') BETWEEN ? AND ?
+                    AND julianday(e.created_at)<=julianday(?) GROUP BY day ORDER BY day""",
+                    [*args, first.isoformat(), today.isoformat(), stamp])).fetchall()
+                for row in rows:
+                    if row["day"] in daily:
+                        daily[row["day"]] = {"submitted": row["submitted"], "processed": row["processed"]}
+        return {"counts": counts, "total": sum(counts.values()), "days": days,
+                "date_from": first.isoformat(), "date_to": today.isoformat(),
+                "timezone": "Asia/Shanghai", "generated_at": stamp,
+                "trend": [{"date": day, **values} for day, values in daily.items()],
+                "reviewable_venues": venues}
 
     @staticmethod
     def _expected(row, expected_version):

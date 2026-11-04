@@ -34,10 +34,12 @@
     root.dataset.started = "true";
     const admin = mode === "admin";
     const base = admin ? "/admin/api/approvals" : "/api/drafts";
-    const ids = ["notice", "notice-text", "notice-refresh", "filter", "scope", "refresh", "list", "count", "detail-panel", "empty", "detail", "detail-heading", "draft-id", "detail-status", "outcome", "fields", "changes-section", "baseline-note", "changes", "assessment-status", "assessment-summary", "issues", "conflicts", "decision-section", "decision-help", "comment", "acknowledge", "approve", "return", "submit-section", "submit-help", "submit", "events", "confirmation", "confirmation-title", "confirmation-copy", "cancel", "confirm", "live"];
+    const ids = ["notice", "notice-text", "notice-refresh", "filter", "scope", "refresh", "list", "count", "detail-panel", "empty", "detail", "detail-heading", "draft-id", "detail-status", "outcome", "fields", "changes-section", "baseline-note", "changes", "assessment-status", "assessment-summary", "issues", "conflicts", "decision-section", "decision-help", "comment", "acknowledge", "approve", "return", "submit-section", "submit-help", "submit", "events", "confirmation", "confirmation-title", "confirmation-copy", "cancel", "confirm", "live", "schedule-viz", "assessment-viz", "analytics", "analytics-scope", "analytics-error", "analytics-footnote", "distribution", "trend", "trend-days"];
     const ui = Object.fromEntries(ids.map(id => [id, document.getElementById(`review-${id}`)]));
+    for (const id of ["analytics-toggle", "analytics-body", "analytics-compact"]) ui[id] = document.getElementById(`review-${id}`);
+    if (admin) window.VenueVisuals.disclosure({ button: ui["analytics-toggle"], body: ui["analytics-body"], root: ui.analytics, compact: ui["analytics-compact"], key: "venue-ui:approval-overview", label: "图表" });
     const initialId = new URLSearchParams(window.location.search).get("draft");
-    const state = { csrf: document.querySelector('meta[name="csrf-token"]')?.content || "", items: [], selected: uuidPattern.test(initialId || "") ? initialId : null, detail: null, request: 0, busy: false, loadingList: false, decision: null, user: null };
+    const state = { csrf: document.querySelector('meta[name="csrf-token"]')?.content || "", items: [], selected: uuidPattern.test(initialId || "") ? initialId : null, detail: null, request: 0, summaryRequest: 0, busy: false, loadingList: false, decision: null, user: null };
 
     function announce(text) { ui.live.textContent = text; }
 
@@ -80,6 +82,7 @@
       if (ui.comment) ui.comment.disabled = value || !(state.detail?.actions?.can_approve || state.detail?.actions?.can_return);
       if (ui.acknowledge) ui.acknowledge.disabled = value || !state.detail?.actions?.can_approve;
       for (const button of ui.list.querySelectorAll("button")) button.disabled = value;
+      if (admin) for (const button of ui.distribution.querySelectorAll("button")) button.disabled = value || state.loadingList;
       updateButtons();
     }
 
@@ -174,6 +177,8 @@
       }
       field("创建时间", `${date(detail.created_at)}（北京时间）`);
       if (detail.submitted_at) field("提交时间", `${date(detail.submitted_at)}（北京时间）`);
+      window.VenueVisuals.schedule(ui["schedule-viz"], detail);
+      window.VenueVisuals.assessment(ui["assessment-viz"], detail);
       renderChanges(detail); renderAssessment(detail); renderEvents(detail.events || []);
       const actions = detail.actions || {};
       if (admin) {
@@ -283,6 +288,7 @@
       ui.refresh.disabled = true;
       ui.filter.disabled = true;
       ui.list.setAttribute("aria-busy", "true");
+      syncSummaryFilter();
       if (!state.items.length) ui.list.replaceChildren(element("p", "review-loading", admin ? "正在读取已提交申请…" : "正在读取你的草稿…"));
       try {
         const query = new URLSearchParams({ limit: "50" });
@@ -309,7 +315,48 @@
         state.loadingList = false;
         ui.refresh.disabled = state.busy;
         ui.filter.disabled = state.busy;
+        syncSummaryFilter();
       }
+    }
+
+    function syncSummaryFilter() {
+      if (!admin) return;
+      for (const button of ui.distribution.querySelectorAll("button")) {
+        button.disabled = state.busy || state.loadingList;
+        button.setAttribute("aria-pressed", String(button.dataset.status === ui.filter.value));
+      }
+    }
+
+    async function loadSummary() {
+      if (!admin) return;
+      const request = ++state.summaryRequest;
+      ui.analytics.setAttribute("aria-busy", "true");
+      ui["analytics-error"].hidden = true;
+      try {
+        const data = await api(`${base}/summary?days=${encodeURIComponent(ui["trend-days"].value)}`);
+        if (request !== state.summaryRequest) return;
+        if (!Array.isArray(data?.trend) || !data.counts || !Number.isInteger(data.total)) throw new Error("概览数据格式异常，请刷新重试。");
+        window.VenueVisuals.distribution(ui.distribution, data, status => {
+          if (state.busy || state.loadingList) return;
+          ui.filter.value = status;
+          ui.filter.dispatchEvent(new Event("change"));
+        });
+        window.VenueVisuals.trend(ui.trend, data);
+        const venues = data.reviewable_venues || [];
+        ui["analytics-compact"].textContent = venues.length ? `待审核 ${data.counts.submitted} 份 · 已通过 ${data.counts.approved} 份 · 已退回 ${data.counts.returned} 份` : "尚未开通场馆审核权限。";
+        ui["analytics-scope"].textContent = venues.length ? `统计范围：${venues.map(item => item.name && item.name !== item.id ? `${item.name}（${item.id}）` : item.id).join("、")} · 全部授权申请` : "尚未开通场馆审核权限，当前没有可统计的申请。";
+        ui["analytics-footnote"].textContent = `状态按申请份数统计；趋势按操作次数统计，包含重复提交。日期范围 ${data.date_from} 至 ${data.date_to}（北京时间）。更新于 ${date(data.generated_at)}。审批通过不代表正式占档。`;
+        syncSummaryFilter();
+      } catch (error) {
+        if (request !== state.summaryRequest) return;
+        ui.distribution.replaceChildren(element("p", "viz-note", "申请状态暂不可用。"));
+        window.VenueVisuals.clearTrend(ui.trend);
+        ui.trend.replaceChildren(element("p", "viz-note", "趋势暂不可用。"));
+        ui["analytics-scope"].textContent = "尚未取得当前统计范围。";
+        ui["analytics-compact"].textContent = "统计暂不可用，请展开查看并刷新重试。";
+        ui["analytics-error"].textContent = `${error.message} 点击“刷新列表”可同时重试概览。`;
+        ui["analytics-error"].hidden = false;
+      } finally { if (request === state.summaryRequest) ui.analytics.setAttribute("aria-busy", "false"); }
     }
 
     function prepareDecision(decision) {
@@ -352,7 +399,7 @@
         renderDetail(detail);
         notice({ submit: "草稿已提交审核。", approve: "审批结果已保存：通过。资源占用和原排期未改变。", return: "申请已退回，退回原因已保存。" }[pending.decision], { success: true });
         setBusy(false);
-        await loadList({ keepDetail: true });
+        await Promise.allSettled([loadList({ keepDetail: true }), loadSummary()]);
         ui["detail-panel"].focus({ preventScroll: true });
       } catch (error) {
         setBusy(false);
@@ -364,8 +411,9 @@
       } finally { setBusy(false); }
     }
 
-    ui.filter.addEventListener("change", () => { state.selected = null; clearDetail(); notice(""); loadList(); });
-    ui.refresh.addEventListener("click", () => { notice(""); loadList(); });
+    ui.filter.addEventListener("change", () => { state.selected = null; clearDetail(); notice(""); syncSummaryFilter(); loadList(); });
+    ui.refresh.addEventListener("click", () => { notice(""); loadList(); loadSummary(); });
+    if (admin) ui["trend-days"].addEventListener("change", loadSummary);
     ui["notice-refresh"].addEventListener("click", () => { notice(""); if (state.selected) loadDetail(state.selected, { retainComment: true }); else loadList(); });
     ui.cancel.addEventListener("click", () => { const previous = state.decision?.decision; resetConfirmation(); (previous === "submit" ? ui.submit : previous === "return" ? ui.return : ui.approve)?.focus(); });
     ui.confirm.addEventListener("click", saveDecision);
@@ -379,7 +427,7 @@
     });
     window.addEventListener("pageshow", event => { if (event.persisted) { root.replaceChildren(); window.location.reload(); } });
     (async () => {
-      try { state.user = await api("/auth/me"); state.csrf = state.user.csrf_token || state.csrf; await loadList(); }
+      try { state.user = await api("/auth/me"); state.csrf = state.user.csrf_token || state.csrf; await Promise.allSettled([loadList(), loadSummary()]); }
       catch (error) { notice(error.message, { refresh: true }); ui.list.replaceChildren(element("p", "review-list-empty", "身份核验未完成，请重新登录后查看。")); }
     })();
   }

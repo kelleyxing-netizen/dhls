@@ -252,7 +252,7 @@ class AgentHarness:
         await self.state.log_finish(state["run_id"], number, "tool", (time.perf_counter()-started)*1000,
             summary, call_id=call["id"], status="failed" if error_code else "completed", error_code=error_code)
         get_stream_writer()({"event": "tool_result", "data": {"tool_name": name, "round": number,
-            "code": result["code"], "summary": summary}})
+            "code": result["code"], "result_status": payload.get("status"), "summary": summary}})
         return {"messages": [*state["messages"], {"role": "tool", "tool_call_id": call["id"], "content": dumps(result)}], "call": None}
 
     async def recover(self, owner, run_id):

@@ -13,7 +13,7 @@
     "agent-preview-empty", "agent-preview-content", "agent-preview-note", "agent-preview-stream",
     "agent-preview-fields", "agent-preview-details", "agent-preview-json", "agent-expiry",
     "agent-approve", "agent-reject", "agent-confirm-actions", "agent-draft-result", "agent-draft-label",
-    "agent-run-label", "agent-live-status",
+    "agent-run-label", "agent-live-status", "agent-process", "agent-process-note",
   ].map((id) => [id, $(id)]));
   const USER_ID = document.querySelector('meta[name="current-user-id"]')?.content || "";
   const STORAGE_KEY = `venue-agent:last-run:${USER_ID}`;
@@ -33,6 +33,39 @@
     previewText: "", answer: "", requestAttempt: null, controller: null, operation: 0,
     logViews: new Map(), noticeAction: null, draft: null,
   };
+  const processItems = Object.fromEntries(Array.from(ui["agent-process"].children, item => [item.dataset.step, item]));
+  window.VenueVisuals.disclosure({ button: $("agent-process-toggle"), body: ui["agent-process"], root: $("agent-process-panel"), key: "venue-ui:process-steps", label: "步骤" });
+  function processStep(key, status, message) {
+    const item = processItems[key];
+    if (!item) return;
+    if (item.dataset.state !== status) item.dataset.state = status;
+    item.querySelector("small").textContent = message;
+  }
+  function resetProcess() {
+    for (const key of Object.keys(processItems)) processStep(key, "idle", "尚未执行");
+    ui["agent-process-note"].textContent = "根据本次任务的实际查询、校验和确认记录更新；未执行的步骤保持未完成。";
+  }
+  function processTool(entry, complete) {
+    if (entry.event_type && entry.event_type !== "tool") return;
+    const tool = entry.tool_name || entry.name;
+    const key = ({ search_policy: "policy", get_booking_context: "resources", check_availability: "resources", validate_request: "validate", create_draft: processItems.confirm.dataset.state === "running" || state.draft ? "confirm" : "preview" })[tool];
+    if (!key) return;
+    if (!complete) ui["agent-process-note"].textContent = `${TOOL_LABELS[tool] || "处理任务"}：正在执行。`;
+    if (entry.status === "awaiting_confirmation") { processStep("preview", "done", "预览已保存"); processStep("confirm", "waiting", "等待你确认"); return; }
+    const code = entry.code || entry.error_code;
+    // 旧持久日志的结果状态由后端固定格式写入，不解析模型自由文本。
+    const outcome = entry.result_status || /^工具返回：(PASS|AVAILABLE|CONFLICT|NEEDS_REVIEW)。$/.exec(entry.result_summary || "")?.[1];
+    const blocked = (code && code !== "OK") || ["CONFLICT", "NEEDS_REVIEW"].includes(outcome) || entry.status === "failed";
+    if (complete && blocked) processStep(key, code === "DRAFT_REJECTED" ? "paused" : "blocked", code === "DRAFT_REJECTED" ? "已取消创建" : outcome === "CONFLICT" ? "发现资源冲突" : outcome === "NEEDS_REVIEW" ? "需人工核实规则" : "未完成，请查看处理记录");
+    else processStep(key, complete ? "done" : "running", complete ? (key === "validate" && outcome === "PASS" ? "申请校验通过" : "已完成") : (tool === "get_booking_context" ? "正在读取原排期" : "正在执行"));
+  }
+  function settleProcess(status) {
+    if (status === "awaiting_confirmation") { processStep("preview", "done", "预览已保存"); processStep("confirm", "waiting", "等待你确认"); }
+    else if (status === "rejected") processStep("confirm", "paused", "已取消创建");
+    for (const [key, item] of Object.entries(processItems)) {
+      if (item.dataset.state === "running" && !["running", "created", "pending", "queued"].includes(status)) processStep(key, ["failed", "round_limit"].includes(status) ? "blocked" : "paused", status === "completed" ? "本次未完成此步骤" : "已暂停，请核对记录");
+    }
+  }
 
   class RequestError extends Error {
     constructor(message, code = "REQUEST_FAILED", status = 0) {
@@ -68,6 +101,8 @@
     ui["agent-status"].textContent = message;
     ui["agent-status-dot"].dataset.state = state.busy ? "working" : status;
     ui["agent-live-status"].textContent = message;
+    ui["agent-process-note"].textContent = message;
+    settleProcess(status);
   }
   function rememberRun(id) {
     // 仅保存当前账号的任务编号；不持久保存问题、草稿、日志、CSRF 或认证凭据。
@@ -168,6 +203,7 @@
 
   /* 执行日志以业务名称展示；参数和服务端摘要按需展开，绝不展示模型私有推理。 */
   function addLog(entry, complete = false) {
+    processTool(entry, complete);
     const tool = String(entry.tool_name || entry.name || "");
     const round = entry.round ?? entry.round_no ?? entry.round_number ?? state.round;
     const key = String(entry.id || `${round}:${entry.event_type || "tool"}:${tool}:${entry.tool_call_id || ""}`);
@@ -230,6 +266,7 @@
       throw new RequestError("草稿确认信息不完整，请核对任务状态。", "INVALID_PREVIEW");
     }
     state.pending = { ...pending, trusted: true };
+    processStep("preview", "done", "完整预览已保存"); processStep("confirm", "waiting", "等待你确认");
     ui["agent-preview-empty"].hidden = true; ui["agent-preview-content"].hidden = false;
     ui["agent-draft-result"].hidden = true; ui["agent-confirm-actions"].hidden = false;
     ui["agent-preview-badge"].textContent = "等待你确认"; ui["agent-preview-badge"].dataset.ready = "true";
@@ -256,11 +293,12 @@
     const stamp = expiryTime(state.pending.expires_at);
     const valid = Number.isFinite(stamp) && stamp > Date.now();
     ui["agent-expiry"].textContent = valid ? `请在 ${formatTime(stamp)} 前确认；创建时会再次核对权限和版本。` : "本次确认已过期。请开始新任务，重新查询和校验。";
-    if (!valid) { ui["agent-preview-badge"].textContent = "确认已过期"; ui["agent-preview-badge"].dataset.ready = "false"; }
+    if (!valid) { ui["agent-preview-badge"].textContent = "确认已过期"; ui["agent-preview-badge"].dataset.ready = "false"; processStep("confirm", "paused", "确认已过期"); }
     updateControls();
   }
   function showDraft(draft) {
     state.draft = draft; state.pending = null;
+    processStep("preview", "done", "完整预览已保存"); processStep("confirm", "done", "员工确认，草稿已创建");
     ui["agent-preview-empty"].hidden = true; ui["agent-preview-content"].hidden = true;
     ui["agent-draft-result"].hidden = false;
     ui["agent-preview-badge"].textContent = "已创建"; ui["agent-preview-badge"].dataset.ready = "false";
@@ -318,6 +356,7 @@
       if (typeof data.text !== "string") throw new RequestError("助手回复片段格式异常。", "INVALID_STREAM");
       showAnswer(data.text);
     } else if (name === "preview_start") {
+      processStep("preview", "running", "正在接收完整预览");
       resetPreview(); showPartialPreview("");
     } else if (name === "preview_delta") {
       if (typeof data.text !== "string") throw new RequestError("草稿片段格式异常。", "INVALID_STREAM");
@@ -369,6 +408,7 @@
       if (!result || typeof result !== "object") throw new RequestError("任务状态不完整，请稍后重试。", "INVALID_RESPONSE");
       setRun(result.id || result.run_id); setRounds(result.round_count, result.max_rounds);
       if (Array.isArray(result.logs)) {
+        resetProcess();
         state.logViews.clear(); ui["agent-logs"].replaceChildren(); ui["agent-log-empty"].hidden = false;
         for (const entry of result.logs) addLog(entry, entry.status !== "running");
       }
@@ -434,13 +474,14 @@
     if (!question || question.length > 2000) { showNotice("请填写2000字以内的具体需求。"); return; }
     // 未收到 meta 的网络不确定请求保留同一幂等键；显式修改内容才视为新请求。
     if (!state.requestAttempt || state.requestAttempt.question !== question) state.requestAttempt = { question, key: uuid() };
-    resetPreview(); state.answer = ""; ui["agent-answer"].textContent = ""; ui["agent-answer-panel"].hidden = true;
+    resetProcess(); resetPreview(); state.answer = ""; ui["agent-answer"].textContent = ""; ui["agent-answer-panel"].hidden = true;
     state.logViews.clear(); ui["agent-logs"].replaceChildren(); ui["agent-log-empty"].hidden = false;
     await consumeRequest("/agent/runs", { question }, { "Idempotency-Key": state.requestAttempt.key });
   }
   async function confirmDraft(approved) {
     if (state.busy || !pendingValid() || !state.runId || state.authExpired) return;
     const pending = state.pending;
+    processStep("confirm", "running", approved ? "正在复核并创建草稿" : "正在取消创建");
     // 请求绑定员工实际看到的完整内容摘要，模型不能替员工生成这里的确认动作。
     await consumeRequest(`/agent/runs/${encodeURIComponent(state.runId)}/confirm`, {
       confirmation_id: pending.id, preview_hash: pending.preview_hash, approved,
@@ -453,7 +494,7 @@
     ui["agent-logs"].replaceChildren(); ui["agent-log-empty"].hidden = false;
     ui["agent-answer"].textContent = ""; ui["agent-answer-panel"].hidden = true;
     ui["agent-run-label"].hidden = true; ui["agent-question"].value = "";
-    resetPreview(); hideNotice(); setStatus("等待你的需求", "idle"); updateControls(); ui["agent-question"].focus();
+    resetProcess(); resetPreview(); hideNotice(); setStatus("等待你的需求", "idle"); updateControls(); ui["agent-question"].focus();
   }
   async function logout() {
     if (state.authExpired) return;

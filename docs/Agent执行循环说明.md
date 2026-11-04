@@ -109,7 +109,7 @@ flowchart TD
 | `meta` | `run_id`、`round_count`、`max_rounds` |
 | `status` | `stage=deciding`、`round`，显示当前决策轮次 |
 | `tool_start` | `tool_name`、`round` |
-| `tool_result` | `tool_name`、`round`、业务 `code`、`summary`；外层信封可为 `OK`，工具业务错误看 `data.code`，模型会收到该结果继续决策 |
+| `tool_result` | `tool_name`、`round`、业务 `code`、`result_status`、`summary`；`result_status`为工具数据中的业务状态（例如`AVAILABLE`、`PASS`、`CONFLICT`、`NEEDS_REVIEW`），无状态时为null。外层信封可为 `OK`，工具业务错误看 `data.code`，模型会收到该结果继续决策；前端不能以HTTP或外层成功代替业务通过 |
 | `preview_start` | `confirmation_id`、`preview_hash`、`expires_at`，清空旧预览并锁定按钮 |
 | `preview_delta` | `text`，规范预览 JSON 每段最多64字符；只展示，不执行 |
 | `confirmation_required` | 上述确认元信息及完整 `preview` |
