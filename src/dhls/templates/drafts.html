@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><meta name="theme-color" content="#183247">
+  <meta name="csrf-token" content="{{ csrf_token }}"><meta name="current-user-id" content="{{ user.id }}">
+  <title>我的草稿 · 场馆运营</title>
+  <link rel="stylesheet" href="/static/agent.css"><link rel="stylesheet" href="/static/approvals.css">
+  <script src="/static/auth.js" defer></script><script src="/static/approvals.js" defer></script><script src="/static/drafts.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#review-list-title">跳到草稿列表</a>
+  <header class="app-header"><a class="brand" href="/drafts"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 12 16 6l11 6M7 14v12m9-12v12m9-12v12M4 27h24"/></svg><span>场馆运营<small>排期与变更助手</small></span></a><nav class="workspace-nav" aria-label="工作空间"><a href="/">制度问答</a><a href="/agent">排期与变更</a><a href="/drafts" aria-current="page">我的草稿</a>{% if user.role == 'admin' %}<a href="/admin/approvals">管理后台</a>{% endif %}</nav><div class="account"><span>{{ user.display_name }}</span><button id="logout-button" class="text-button" type="button">退出</button></div></header>
+  <main class="drafts-main">
+    <div id="review-workspace" class="review-workspace" data-mode="employee">
+      <div class="review-page-heading"><div><h1>我的草稿</h1><p>核对已创建的排期与变更草稿，提交审核并跟进处理结果。</p></div><a class="secondary-button" href="/agent">准备新草稿</a></div>
+      <p class="review-boundary">草稿经你提交后才进入管理员待审核列表。审批通过后仍需另行办理正式占档。</p>
+      <div id="auth-notice" class="auth-notice" role="alert" hidden></div>
+      <div id="review-notice" class="review-notice" role="alert" hidden><p id="review-notice-text"></p><button id="review-notice-refresh" class="text-button" type="button" hidden>刷新当前内容</button></div>
+      <div class="review-toolbar"><div class="review-filter"><label for="review-filter">草稿状态</label><select id="review-filter"><option value="all">全部草稿</option><option value="draft">未提交</option><option value="submitted">待审核</option><option value="returned">已退回</option><option value="approved">已通过</option></select></div><p id="review-scope" class="review-scope">仅显示本人草稿</p><button id="review-refresh" class="secondary-button" type="button">刷新列表</button></div>
+      <div class="review-grid">
+        <section class="review-list-panel" aria-labelledby="review-list-title"><div class="review-section-heading"><h2 id="review-list-title">草稿列表</h2><span id="review-count">最近50份</span></div><div id="review-list" class="review-list" aria-live="polite"><p class="review-loading">正在读取你的草稿…</p></div></section>
+        <section id="review-detail-panel" class="review-detail-panel" aria-labelledby="review-detail-heading" tabindex="-1">
+          <div id="review-empty" class="review-empty"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6h24v36H12zM18 15h12M18 23h12M18 31h7"/></svg><h2>选择一份草稿</h2><p>查看完整申请与审核记录，核对后再提交。</p></div>
+          <div id="review-detail" hidden>
+            <div class="review-detail-heading"><div><h2 id="review-detail-heading">草稿详情</h2><p id="review-draft-id" class="review-reference"></p></div><span id="review-detail-status" class="review-status"></span></div>
+            <p id="review-outcome" class="review-outcome" hidden></p>
+            <section class="review-section" aria-labelledby="review-candidate-heading"><h3 id="review-candidate-heading">申请内容</h3><dl id="review-fields" class="review-fields"></dl></section>
+            <section id="review-changes-section" class="review-section" aria-labelledby="review-changes-heading" hidden><h3 id="review-changes-heading">原排期与变更差异</h3><p id="review-baseline-note" class="review-help"></p><div class="review-table-wrap"><table class="review-diff-table"><thead><tr><th scope="col">字段</th><th scope="col">原排期基线</th><th scope="col">申请方案</th></tr></thead><tbody id="review-changes"></tbody></table></div></section>
+            <section class="review-section" aria-labelledby="review-assessment-heading"><div class="review-section-heading"><h3 id="review-assessment-heading">当前复核</h3><span id="review-assessment-status" class="review-status"></span></div><p id="review-assessment-summary" class="review-help"></p><ul id="review-issues" class="review-issues" hidden></ul><div id="review-conflicts" class="review-conflicts" hidden></div></section>
+            <section id="review-submit-section" class="review-section" aria-labelledby="review-submit-heading" hidden><h3 id="review-submit-heading">提交审核</h3><p id="review-submit-help" class="review-help"></p><div class="review-action-row"><a class="secondary-button" href="/agent">准备修正草稿</a><button id="review-submit" class="primary-button" type="button" disabled>提交审核</button></div></section>
+            <section class="review-section" aria-labelledby="review-events-heading"><h3 id="review-events-heading">审批记录</h3><ol id="review-events" class="review-events"></ol></section>
+            <section id="review-confirmation" class="review-confirmation" aria-labelledby="review-confirmation-title" hidden><h3 id="review-confirmation-title"></h3><p id="review-confirmation-copy"></p><div class="review-action-row"><button id="review-cancel" class="secondary-button" type="button">取消</button><button id="review-confirm" class="primary-button" type="button"></button></div></section>
+          </div>
+        </section>
+      </div>
+      <div id="review-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+      <noscript><p class="review-notice">请启用 JavaScript，以查看草稿并提交审核。</p></noscript>
+    </div>
+  </main>
+</body>
+</html>

@@ -6,6 +6,7 @@
 | --- | --- |
 | `python scripts/manage_users.py --help` | 交互创建账号、重置密码、启停账号；先停止同数据目录服务 |
 | `python scripts/manage_agent.py init-demo --username venue.employee` | 为已有账号显式初始化虚构场馆、资源与业务授权 |
+| `python scripts/manage_agent.py grant-review --username venue.admin --venue east` | 对已有该场馆业务授权的管理员显式开通审核权；先停止同数据目录服务 |
 | `python scripts/validate_evaluation.py` | 只用标准库校验30条评测数据结构，不运行模型或判定业务验收 |
 | `pwsh -File scripts/run.ps1 -Port 8000` | 在仓库根目录启动本机服务；跨平台可直接用 `python -m dhls` |
 | `pwsh -File scripts/build.ps1 -OutDir <仓库外目录>` | 安装构建依赖后构建wheel与源码包；跨平台可用 `python -m build --outdir <仓库外目录>` |

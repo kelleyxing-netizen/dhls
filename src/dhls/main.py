@@ -235,6 +235,9 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
                     business = AgentBusiness(store, app.state.retriever, app.state.document_version, app.state.knowledge_is_demo)
                     await business.initialize()
                     app.state.agent = AgentHarness(store, business, settings, client, checkpoint, agent_decide)
+                    from dhls.core.approvals import ApprovalService
+                    app.state.approvals = ApprovalService(store, business)
+                    await app.state.approvals.initialize()
                     yield
         finally:
             instance_lock.release()
@@ -251,7 +254,7 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
     async def chat_error(request, error):
         # 页面导航跳转登录；API始终保留HTTP错误码与统一中文JSON信封。
         if error.status == 401 and request.method == "GET" and (
-            request.url.path in {"/", "/agent", "/admin", "/admin/knowledge", "/admin/prompts", "/admin/conversations"}
+            request.url.path in {"/", "/agent", "/drafts", "/admin", "/admin/approvals", "/admin/knowledge", "/admin/prompts", "/admin/conversations"}
         ):
             return RedirectResponse("/login", status_code=303)
         return JSONResponse(envelope(error.code, error.message, {"retryable": error.retryable},
@@ -286,7 +289,7 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
             user = await app.state.auth.authenticate(request)
         except ChatError:
             return templates.TemplateResponse(request=request, name="login.html", context={})
-        return RedirectResponse("/admin/knowledge" if user["role"] == "admin" else "/", status_code=303)
+        return RedirectResponse("/admin/approvals" if user["role"] == "admin" else "/", status_code=303)
 
     @app.post("/auth/login")
     async def login(body: LoginInput, request: Request):
@@ -312,7 +315,7 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
 
     @app.get("/admin")
     async def admin_root(user=Depends(require_admin)):
-        return RedirectResponse("/admin/knowledge", status_code=303)
+        return RedirectResponse("/admin/approvals", status_code=303)
 
     # 【可复用核心：后台路由保护】本批只提供入口骨架，后续批次接入真实管理操作。
     @app.get("/admin/knowledge")
@@ -456,6 +459,8 @@ def create_app(settings: Settings | None = None, retriever=None, llm_stream=None
     # 静态资源同源提供，不引入CDN或跨域模型密钥；404仍由中文错误处理器接管。
     from dhls.api.agent import install_agent_routes
     install_agent_routes(app, templates, ManagedStreamingResponse, heartbeat_stream, sse)
+    from dhls.api.approvals import install_approval_routes
+    install_approval_routes(app, templates, envelope)
     app.mount("/static", StaticFiles(directory=STATIC_DIR, check_dir=False), name="static")
     return app
 

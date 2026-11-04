@@ -43,8 +43,8 @@
     // 跳转目标只允许已知同源页面，拒绝外域 URL、双斜线和任意接口路径。
     if (next === "/") return "/";
     if (user?.role === "admin") {
-      if (/^\/admin(?:\/(?:knowledge|prompts|conversations))?$/.test(next || "")) return next;
-      return "/admin/knowledge";
+      if (/^\/admin(?:\/(?:approvals|knowledge|prompts|conversations))?$/.test(next || "")) return next;
+      return "/admin/approvals";
     }
     return "/";
   }

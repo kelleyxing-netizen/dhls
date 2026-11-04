@@ -16,7 +16,7 @@
   <!-- 可复用：身份由服务端渲染，Cookie 始终为 HttpOnly，页面不持有 JWT 正文。 -->
   <header class="app-header">
     <a class="brand" href="/agent"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 12 16 6l11 6M7 14v12m9-12v12m9-12v12M4 27h24"/></svg><span>场馆运营<small>排期与变更助手</small></span></a>
-    <nav class="workspace-nav" aria-label="工作空间"><a href="/">制度问答</a><a href="/agent" aria-current="page">排期与变更</a>{% if user.role == 'admin' %}<a href="/admin">管理后台</a>{% endif %}</nav>
+    <nav class="workspace-nav" aria-label="工作空间"><a href="/">制度问答</a><a href="/agent" aria-current="page">排期与变更</a><a href="/drafts">我的草稿</a>{% if user.role == 'admin' %}<a href="/admin/approvals">管理后台</a>{% endif %}</nav>
     <div class="account"><span>{{ user.display_name }}</span><button id="agent-logout" class="text-button" type="button">退出</button></div>
   </header>
   <main id="agent-main" class="agent-main">
@@ -53,7 +53,7 @@
           <p id="agent-expiry" class="expiry" hidden></p>
           <div id="agent-confirm-actions" class="confirmation-actions"><button id="agent-reject" class="secondary-button" type="button" disabled>暂不创建</button><button id="agent-approve" class="primary-button" type="button" disabled>确认创建草稿</button></div>
         </div>
-        <div id="agent-draft-result" class="draft-result" hidden><span class="result-icon" aria-hidden="true">✓</span><h3>草稿已创建</h3><p id="agent-draft-label"></p><p>后续仍需按业务流程提交审批和办理占档。</p></div>
+        <div id="agent-draft-result" class="draft-result" hidden><span class="result-icon" aria-hidden="true">✓</span><h3>草稿已创建</h3><p id="agent-draft-label"></p><p>进入“我的草稿”核对并提交审核；审批与正式占档分开办理。</p><a class="primary-button" href="/drafts">查看我的草稿</a></div>
       </section>
     </div>
   </main>

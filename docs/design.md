@@ -1,6 +1,6 @@
 # 设计说明
 
-本页对应当前可运行源码，更新于2026年10月31日。历史调研和报价保留原日期，见[文档索引](README.md)。目录整理使用可安装的 `src/dhls` 包，业务行为保持现有员工问答、身份权限和草稿确认范围。
+本页对应当前源码，更新于2026年11月4日。历史调研和报价保留原日期，见[文档索引](README.md)。目录使用可安装的 `src/dhls` 包，本轮在员工问答、身份权限和草稿确认之上增加人工审批闭环。
 
 ## 四层结构
 
@@ -22,6 +22,7 @@ flowchart TD
 | --- | --- |
 | [main.py](../src/dhls/main.py) | 应用生命周期、普通问答/登录/管理入口、SSE和错误边界 |
 | [api/agent.py](../src/dhls/api/agent.py) | Agent新任务、状态与可信确认HTTP边界 |
+| [api/approvals.py](../src/dhls/api/approvals.py)、[core/approvals.py](../src/dhls/core/approvals.py) | 本人提交、审核范围、当前业务复核、版本竞争控制及审批事件事务 |
 | [core/rag.py](../src/dhls/core/rag.py) | 阶段1切片、Embedding、FAISS、混合检索、脱敏和独立LLM调用，保留CLI |
 | [core/chat.py](../src/dhls/core/chat.py)、[store.py](../src/dhls/core/store.py)、[auth.py](../src/dhls/core/auth.py) | 环境配置、历史/引用、上游流、SQLite、JWT/Argon2/CSRF |
 | [core/agent_loop.py](../src/dhls/core/agent_loop.py)、[agent_state.py](../src/dhls/core/agent_state.py) | 五轮预算、工具回填、中断、状态、确认绑定和审计日志 |
@@ -39,7 +40,7 @@ flowchart TD
 
 ## 当前边界与验收材料
 
-业务工具具备显式账号/部门/场馆授权，但普通问答仍共用一份启动时制度；文档ACL及管理后台后续批次没有因目录整理自动完成。仅明确初始化的虚构规则可PASS，草稿不提交审批、不占档。外发正则脱敏为原型机制，生产接入按[上线清单](prelaunch-checklist.md)逐项验收。
+业务工具具备显式账号/部门/场馆授权，但普通问答仍共用一份启动时制度；文档ACL及管理后台后续批次没有自动完成。仅明确初始化的虚构规则可PASS。员工可主动提交草稿，管理员仅审核其获授权场馆的已提交申请；通过前重新核验实时权限、资源与原排期，记录所见内容快照，禁止自审。审批不占档、不切换原排期。外发正则脱敏为原型机制，生产接入按[上线清单](prelaunch-checklist.md)逐项验收。
 
 [30条评测](../data/evaluation_cases.json)是待执行题集；现有自动化回归使用替身模型验证真实图、鉴权、数据库与SSE。[评测说明](evaluation.md)区分结构校验、行为评分和生产验收，不能混算通过率。
 
