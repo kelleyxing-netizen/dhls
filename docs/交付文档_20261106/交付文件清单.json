@@ -1,0 +1,157 @@
+[
+  {
+    "file": "01_六人访谈记录.csv",
+    "bytes": 30804,
+    "sha256": "f2b174e058d9284f8ecce32e850e0398f2f13876750d8b959f39e4a451a25c2f"
+  },
+  {
+    "file": "01_六人访谈记录.json",
+    "bytes": 38232,
+    "sha256": "72ba4c20b204834485187b6d1fa57e51dc65d65845d7f33c937e061c7d13ab28"
+  },
+  {
+    "file": "01_六人访谈记录.md",
+    "bytes": 28175,
+    "sha256": "d364779e0644a7bb45bbc6d1021345ab1cbf68b037031d69493ea334ff578e62"
+  },
+  {
+    "file": "01_六人访谈记录整理.docx",
+    "bytes": 42384,
+    "sha256": "b56b6a05ad5e5552561e7eddd1dfabff2285e30cd3a850cf3d0306853f648039"
+  },
+  {
+    "file": "02_1_客户简报.md",
+    "bytes": 1825,
+    "sha256": "e5bb57adc7d78de191b5eef92e04a01a6fb022d66e2935bc846296fafb057cb2"
+  },
+  {
+    "file": "02_2_现状信息请求表.md",
+    "bytes": 2683,
+    "sha256": "e50992cd4c00bcbe3dccea8cd82814f7d5f531d602cb27956beedb06d861eced"
+  },
+  {
+    "file": "02_3_业务发现访谈问题库.md",
+    "bytes": 5977,
+    "sha256": "e882da8bd0ea5eac70402137bbe0be86b2c36768f2a10e04fd719d1116638174"
+  },
+  {
+    "file": "02_4_利益相关者资料与分工.md",
+    "bytes": 2990,
+    "sha256": "4a3d0e07d7e65fd755316788aae02977a4658cbbd8c869d6f74d1f8ff13e4fbf"
+  },
+  {
+    "file": "02_四份基本资料.zip",
+    "bytes": 4739,
+    "sha256": "4324e7fcb06448e022d63263444b14edaf48cf5ce590e296d70d837608cf807b"
+  },
+  {
+    "file": "02_项目基本资料汇编.docx",
+    "bytes": 40125,
+    "sha256": "dd11e874576a23efa3ee62b986bd6879f61a19eb29a717505c96572f87d46890"
+  },
+  {
+    "file": "02_项目基本资料汇编.md",
+    "bytes": 3025,
+    "sha256": "9f3f7353fe57c18cd2761389e4108647880c58117a2d411ba54a4c00ea5f47b5"
+  },
+  {
+    "file": "03_典型事件采访与量化分析.docx",
+    "bytes": 41365,
+    "sha256": "3c33fa60986a5fb4665ce1b034f1a4d1ccc6d733f1f78a8bff6b6fcb06364ceb"
+  },
+  {
+    "file": "03_典型事件采访与量化分析.md",
+    "bytes": 6503,
+    "sha256": "10bbe2aa9b776b3b12e0c2e74780f2965657d21bef21a1f0b0c3c96143fc47f4"
+  },
+  {
+    "file": "03_典型事件采访记录.txt",
+    "bytes": 6473,
+    "sha256": "ed8a28f72a86d811ca218749de949cd95fef9fd987c5161b1d93d81b92e9752b"
+  },
+  {
+    "file": "04_行业分析与项目适用性.docx",
+    "bytes": 40700,
+    "sha256": "90ca946e96470cd5b7820423a11f0170184dc52bc3b645530ea309804ec66e27"
+  },
+  {
+    "file": "04_行业分析与项目适用性.md",
+    "bytes": 3597,
+    "sha256": "4d5010c39ba1401a6b430bcbc9f0246724e5d3852470c0583f08d368e3f332e4"
+  },
+  {
+    "file": "05_改造前后流程与人工控制.docx",
+    "bytes": 1457955,
+    "sha256": "c77b34926d29c4c1efc1506f331946604aacd7b05e6de9b9b2c14d5ed022f210"
+  },
+  {
+    "file": "05_改造前后流程与人工控制.md",
+    "bytes": 2319,
+    "sha256": "a69cad21b3a50118666ee545389a47e0db624db52d07cdd868566953bb2de7e4"
+  },
+  {
+    "file": "05_改造前流程.png",
+    "bytes": 727426,
+    "sha256": "ae1554e7833febe4c2a537c76c6c3d4b031f9b833bf1914ee8c54c7a565656e5"
+  },
+  {
+    "file": "05_改造后目标流程.png",
+    "bytes": 754786,
+    "sha256": "0f17a6cca1a7aef40f160b6891b14ab10383c7c669b42ff1b6bd284fee6e4559"
+  },
+  {
+    "file": "06_需求定义与系统分析方案.docx",
+    "bytes": 43987,
+    "sha256": "a96416d0ea38290d06545740375a8aa2795f4772252f665ae362d1d7196c741e"
+  },
+  {
+    "file": "06_需求定义与系统分析方案.md",
+    "bytes": 9290,
+    "sha256": "05830554d0869f845dbf8b9f6f1b33150657e02709a613ec3406f65053da618d"
+  },
+  {
+    "file": "07_详细项目设计方案.docx",
+    "bytes": 42655,
+    "sha256": "74f862c83152145dad8beabf976a1a79ba41a8abc8758e013f6379c53f9b960b"
+  },
+  {
+    "file": "07_详细项目设计方案.md",
+    "bytes": 6549,
+    "sha256": "256335a0620fc5f34600637ccbe57b27c66d284c311f53da9d2da4c1f270910a"
+  },
+  {
+    "file": "08_三档报价与投入产出测算.docx",
+    "bytes": 41847,
+    "sha256": "4521c425f9d71a34ed1fce37c6d067a75a499bc74b0d5c8e787ebe1adfaf05bf"
+  },
+  {
+    "file": "08_三档报价与投入产出测算.md",
+    "bytes": 5517,
+    "sha256": "589f1196aafdb42640c78c35b72b62de67da98199c383c3c0130ade5fd155a2b"
+  },
+  {
+    "file": "08_报价与收益参数.json",
+    "bytes": 1600,
+    "sha256": "e21840dd287abec1bb8bce798c00b6bcbb5387104d84af4a57539ff5a721e802"
+  },
+  {
+    "file": "09_上线交付与运行手册.docx",
+    "bytes": 42530,
+    "sha256": "33f6684ae28d122f609b4bc03f1ffb86440f4594683e2bf71c3d26e48797f79f"
+  },
+  {
+    "file": "09_上线交付与运行手册.md",
+    "bytes": 7347,
+    "sha256": "a09df00e82adba0ca0f062c590090b8dd7879286c43a07356aa0d754e5aa5965"
+  },
+  {
+    "file": "README.md",
+    "bytes": 2780,
+    "sha256": "bab3fc84960abd9d7cd971528f2f99f0cb7678997eb2477ca4981d6cf4b59715"
+  },
+  {
+    "file": "交付校验说明.md",
+    "bytes": 1463,
+    "sha256": "bfadd898cb14b24fec76d539d070e44e98ca4491c6b870cbdfed30b985b28ffb"
+  }
+]

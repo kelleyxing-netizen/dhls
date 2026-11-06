@@ -1,0 +1,67 @@
+{
+  "date": "2026-11-06",
+  "nature": "预算假设，非正式报价及实测ROI",
+  "currency": "CNY",
+  "tax": "待确认",
+  "tiers": [
+    {
+      "tier": "低档验证",
+      "days": 80,
+      "day_rate": 1500,
+      "build": 120000,
+      "resource_month": 800,
+      "build_resource_months": 4,
+      "initial": 123200,
+      "annual_run": 19200,
+      "first_period": 142400,
+      "three_run_years": 180800
+    },
+    {
+      "tier": "中档试点",
+      "days": 150,
+      "day_rate": 1500,
+      "build": 225000,
+      "resource_month": 1668,
+      "build_resource_months": 4,
+      "initial": 231672,
+      "annual_run": 38016,
+      "first_period": 269688,
+      "three_run_years": 345720
+    },
+    {
+      "tier": "高档扩展",
+      "days": 240,
+      "day_rate": 1500,
+      "build": 360000,
+      "resource_month": 3000,
+      "build_resource_months": 4,
+      "initial": 372000,
+      "annual_run": 64800,
+      "first_period": 436800,
+      "three_run_years": 566400
+    }
+  ],
+  "medium_sensitivity": [
+    {
+      "monthly_cases": 300,
+      "benefit": 108000.0,
+      "net": 45984.0,
+      "roi": -0.688528966806087,
+      "payback_months": 60.457202505219215
+    },
+    {
+      "monthly_cases": 1000,
+      "benefit": 360000.0,
+      "net": 297984.0,
+      "roi": 0.24588413277565185,
+      "payback_months": 9.329574742268042
+    },
+    {
+      "monthly_cases": 2000,
+      "benefit": 720000.0,
+      "net": 657984.0,
+      "roi": 1.5807599893209932,
+      "payback_months": 4.225124015173622
+    }
+  ]
+}
