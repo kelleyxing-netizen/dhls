@@ -6,5 +6,6 @@ recursive-include examples *.py
 recursive-include config *.toml *.md
 recursive-include data *.json *.md
 recursive-include tests *.py
+recursive-include tests/scenarios *.json
 recursive-include mvp *.py *.toml *.json *.md
 prune mvp/.runtime

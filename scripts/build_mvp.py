@@ -40,6 +40,11 @@ def allowed(name: str) -> bool:
         return False
     if name in ROOT_FILES or name == "mvp/.gitignore":
         return True
+    if name == "tests/scenarios/cases.json":
+        return True
+    # 图文报告单独在仓库交付，精简源码包不携带缺少Word附件的报告导航。
+    if name == "tests/README.md" or name.startswith("tests/reports/"):
+        return False
     if path.parts[0] == "src" and name.startswith("src/dhls/"):
         return path.suffix in {".py", ".css", ".js", ".html"}
     if path.parts[0] == "mvp":

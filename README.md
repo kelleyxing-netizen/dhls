@@ -117,6 +117,7 @@ python scripts/manage_users.py --help
 
 ## 评测与检查
 
+- [test两项交付材料](tests/README.md)：五类场景25项量化方案（MD、DOCX）、五份带图过程Word及脱敏执行证据；离线替身验证与真实模型验收分开说明。
 - [30条评测JSON](data/evaluation_cases.json)：制度10条（3条无答案陷阱）、工具10条、违规5条、多轮5条；[执行与评分说明](docs/evaluation.md)。
 - [上线前25项检查清单](docs/prelaunch-checklist.md)：五个维度各5项，含负责人、验证方法、通过标准、状态和证据栏，初始均为未验证。
 - [设计说明](docs/design.md)、[API索引](docs/api.md)、[全部文档](docs/README.md)与[版本记录](CHANGELOG.md)。
