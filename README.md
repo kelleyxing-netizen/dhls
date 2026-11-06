@@ -4,6 +4,8 @@
 
 已实现本地账号/JWT/角色校验、SSE问答、最近6轮完整历史、最多5轮Agent决策、逐轮日志与持久化确认，以及员工提交草稿、场馆授权管理员复核后通过或退回、审批记录留存。文档上传/ACL、数据库提示词、对话审查、正式资源占档和新旧排期切换仍按后续批次接入。代码可运行与生产上线验收分开记录，现有虚构制度不代表企业正式规则。
 
+需要按MVP项目目录运行时，使用 [mvp/README.md](mvp/README.md)：包含独立配置和数据目录、Agent契约、可运行演示知识库、H1创建确认/H2主动提交/H3场馆审核、离线验收与可安装源码包导出。核心统一复用 `src/dhls`，不创建第二份业务实现。
+
 ## 项目结构
 
 ```text
@@ -25,6 +27,7 @@ dhls/
 │   ├── cli/                      # 账号维护和虚构业务初始化
 │   ├── static/                   # 打包随应用发布的前端资源
 │   └── templates/                # Jinja2服务端模板
+├── mvp/                          # 独立运行配置、知识库、三人工点及验收
 ├── docs/
 │   ├── design.md
 │   ├── api.md
@@ -121,7 +124,7 @@ python scripts/manage_users.py --help
 ```powershell
 python -m pip install -e '.[test,build]'
 python scripts/validate_evaluation.py
-python -m pytest tests -q -p no:cacheprovider --basetemp "$env:TEMP\dhls-pytest"
+python -m pytest tests mvp/tests -q -p no:cacheprovider --basetemp "$env:TEMP\dhls-pytest"
 python -m build --outdir "$env:TEMP\dhls-dist"
 ```
 

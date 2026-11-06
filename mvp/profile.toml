@@ -1,0 +1,6 @@
+# 本文件由MVP入口实际读取；仅保存非机密路径。
+# 所有相对路径均相对本文件所在目录，不受启动时工作目录影响。
+schema_version = 1
+name = "场馆排期与需求变更 MVP"
+runtime_dir = ".runtime"
+knowledge_document = "knowledge_base/policy.md"

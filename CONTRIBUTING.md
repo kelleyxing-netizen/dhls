@@ -18,7 +18,7 @@ Linux/macOS使用 `source .venv/bin/activate`。账号由 `python scripts/manage
 
 ```powershell
 python scripts/validate_evaluation.py
-python -m pytest tests -q -p no:cacheprovider --basetemp "$env:TEMP\dhls-pytest"
+python -m pytest tests mvp/tests -q -p no:cacheprovider --basetemp "$env:TEMP\dhls-pytest"
 python -m build --outdir "$env:TEMP\dhls-dist"
 git diff --check
 ```
@@ -26,6 +26,8 @@ git diff --check
 POSIX终端用 `${TMPDIR:-/tmp}/dhls-pytest` 和 `${TMPDIR:-/tmp}/dhls-dist` 作为临时目录。每次测试应使用本次独有、可清理的目录；不要让pytest清理已有重要数据的路径。
 
 源码位于 `src/dhls/`，测试按 `tests/api/`、`tests/core/` 分组。依赖维护在 `requirements.txt`，`pyproject.toml`从同一文件读取运行依赖；不要额外复制一套依赖版本。
+
+`mvp/`为配置与可运行交付入口，复用相同源码；其配置、知识库摘要、人工流程和导出包契约测试位于 `mvp/tests/`。`build_mvp.py`只从已提交HEAD导出，新增文件提交后再构建；不将 `.runtime/`、未提交改动或模型缓存混入发布包。
 
 涉及资源模板或包路径时，除editable安装外还应安装wheel并从仓库外目录验证登录页、静态资源、模块入口及账号CLI。涉及规则或写工具时保留服务端权限、五轮预算、员工确认、版本复核和幂等，不得只用提示词替代。
 

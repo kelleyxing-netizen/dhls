@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "hash_format": "SHA256 of UTF-8 text with LF and no BOM",
+  "source_id": "DEMO-POLICY-001",
+  "title": "场馆排期与需求变更管理制度 原型演示",
+  "version": "DEMO-2026-10-30",
+  "file": "policy.md",
+  "source": "data/sample_policy.md",
+  "nature": "虚构演示制度，不代表真实企业规则或授权",
+  "compiled_date": "2026-11-06",
+  "sha256": "c81ce1c58831aac1994d03aeda24e11eaf1b4acac7ecef0510efe71d9557ae06",
+  "access_scope": "当前所有已登录账号共用；文档ACL未实现"
+}

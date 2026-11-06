@@ -66,7 +66,7 @@ async def run(args):
         lock.release()
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="场馆助手本地账号管理（执行前请停止聊天服务）")
     commands = parser.add_subparsers(dest="command", required=True)
     create = commands.add_parser("create-user", help="创建真实员工或管理员，无默认密码")
@@ -83,7 +83,7 @@ def main() -> int:
     group.add_argument("--enabled", action="store_true")
     group.add_argument("--disabled", dest="enabled", action="store_false")
     try:
-        asyncio.run(run(parser.parse_args()))
+        asyncio.run(run(parser.parse_args(argv)))
         return 0
     except ChatError as error:
         print(f"{error.code}：{error.message}", file=sys.stderr)

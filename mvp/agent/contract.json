@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "implementation": "src/dhls/core/agent_loop.py",
+  "framework": "LangGraph Harness with SQLite checkpoint",
+  "max_model_rounds": 5,
+  "tools": [
+    "search_policy",
+    "get_booking_context",
+    "check_availability",
+    "validate_request",
+    "create_draft",
+    "get_workflow_status"
+  ],
+  "human_checkpoints": [
+    {"id": "H1", "actor": "申请员工", "action": "确认完整预览后创建唯一草稿", "endpoint": "POST /agent/runs/{id}/confirm"},
+    {"id": "H2", "actor": "申请员工", "action": "核对草稿后主动提交审核", "endpoint": "POST /api/drafts/{id}/submit"},
+    {"id": "H3", "actor": "具有该场馆审核授权且不是申请人的管理员", "action": "当前复核后通过或填写原因退回", "endpoint": "POST /admin/api/approvals/{id}/decision"}
+  ],
+  "approval_creates_occupancy": false,
+  "unimplemented": ["document_upload_and_acl", "official_occupancy", "booking_switch", "external_notifications"]
+}

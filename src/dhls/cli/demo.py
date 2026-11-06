@@ -40,7 +40,7 @@ async def run(args):
         lock.release()
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Agent演示初始化与管理员场馆审核授权")
     sub = parser.add_subparsers(dest="command", required=True)
     demo = sub.add_parser("init-demo", help="为已有真实账号创建虚构资源、排期、规则和显式业务授权")
@@ -49,7 +49,7 @@ def main() -> int:
     review.add_argument("--username", required=True)
     review.add_argument("--venue", required=True)
     try:
-        asyncio.run(run(parser.parse_args()))
+        asyncio.run(run(parser.parse_args(argv)))
         return 0
     except ChatError as error:
         print(f"{error.code}：{error.message}", file=sys.stderr)

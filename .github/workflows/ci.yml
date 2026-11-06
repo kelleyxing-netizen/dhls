@@ -39,7 +39,11 @@ jobs:
         run: python -m pip install -e '.[test,build]'
       - name: Validate evaluation data structure
         run: python scripts/validate_evaluation.py
+      - name: Validate MVP profile without network or runtime data
+        run: python mvp/run.py doctor --json
       - name: Run offline regression tests
-        run: python -m pytest tests -q -p no:cacheprovider --basetemp "${{ runner.temp }}/dhls-pytest"
+        run: python -m pytest tests mvp/tests -q -p no:cacheprovider --basetemp "${{ runner.temp }}/dhls-pytest"
       - name: Build distribution with templates and static assets
         run: python -m build --outdir "${{ runner.temp }}/dhls-dist"
+      - name: Export committed MVP source package
+        run: python scripts/build_mvp.py --output "${{ runner.temp }}/dhls-mvp-source.zip"

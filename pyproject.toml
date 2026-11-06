@@ -21,6 +21,7 @@ dhls = "dhls.main:main"
 dhls-rag = "dhls.core.rag:cli"
 dhls-users = "dhls.cli.users:main"
 dhls-demo = "dhls.cli.demo:main"
+dhls-mvp = "dhls.cli.mvp:main"
 
 [project.urls]
 Repository = "https://github.com/kelleyxing-netizen/dhls"
@@ -42,4 +43,4 @@ dependencies = {file = ["requirements.txt"]}
 dhls = ["static/*.html", "static/*.css", "static/*.js", "templates/*.html"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "mvp/tests"]
